@@ -8,7 +8,7 @@ class AbsensiApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(appRouterProvider);
+    final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,

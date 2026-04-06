@@ -14,4 +14,7 @@ class Endpoint {
   static const String users = "$baseUrl/absen/users";
   static const String forgotPassword = "$baseUrl/forgot-password";
   static const String resetPassword = "$baseUrl/reset-password";
+
+  static const String trainings = "$baseUrl/trainings";
+  static const String batches = "$baseUrl/batches";
 }
