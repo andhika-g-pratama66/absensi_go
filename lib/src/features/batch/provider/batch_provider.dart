@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:absensi_go/src/data/models/batch_model.dart';
 import 'package:absensi_go/src/data/repositories/batch_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,8 +24,8 @@ final batchListProvider = FutureProvider.autoDispose<List<Datum>>((ref) async {
 
     return batches;
   } catch (e) {
-    print('=== API ERROR ===');
-    print(e.toString()); // Look at your debug console!
+    log('=== API ERROR ===');
+    log(e.toString()); // Look at your debug console!
     throw Exception('Error fetching batches: $e');
   }
 });

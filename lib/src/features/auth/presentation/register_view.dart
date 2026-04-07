@@ -4,7 +4,6 @@ import 'package:absensi_go/src/core/constants/default_font.dart';
 import 'package:absensi_go/src/core/constants/form_decoration.dart';
 import 'package:absensi_go/src/core/utils/navigator.dart';
 import 'package:absensi_go/src/features/auth/presentation/login_view.dart';
-import 'package:absensi_go/src/features/auth/provider/auth_provider.dart';
 import 'package:absensi_go/src/features/auth/provider/register_provider.dart';
 import 'package:absensi_go/src/features/batch/provider/batch_provider.dart';
 import 'package:absensi_go/src/features/training/provider/training_provider.dart';
@@ -57,7 +56,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       }
 
       try {
-        final response = await ref
+        await ref
             .read(registerProvider.notifier)
             .registerUser(
               name: _nameController.text.trim(),
@@ -73,10 +72,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Registrasi berhasil')));
+        ).showSnackBar(const SnackBar(content: Text('Registrasi berhasil')));
 
         Future.delayed(const Duration(seconds: 2), () {
-          context.pushReplacement(const LoginScreen());
+          if (mounted) context.pushReplacement(const LoginScreen());
         });
       } catch (e) {
         log('Registration Error: $e');
@@ -98,7 +97,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     // Pantau data dari API
     final trainingListAsync = ref.watch(trainingListProvider);
     final batchListAsync = ref.watch(batchListProvider);
-    // Ganti List lama dengan Map ini di dalam _RegisterScreenState
 
     return Scaffold(
       body: SafeArea(
@@ -135,8 +133,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 Text('Jenis Kelamin', style: DefaultFont.bodyBold),
                 DropdownButtonFormField<String>(
                   isExpanded: true,
-                  // Kita cari key (Laki-Laki) berdasarkan value (L/P) yang ada di provider
-                  value: _genderOptions.entries
+                  // Menggunakan initialValue untuk Flutter versi baru
+                  initialValue: _genderOptions.entries
                       .where((entry) => entry.value == selectedGender)
                       .map((entry) => entry.key)
                       .firstOrNull,
@@ -175,7 +173,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   error: (err, stack) => Text('Gagal memuat training: $err'),
                   data: (trainings) {
                     return DropdownButtonFormField<int>(
-                      value: selectedTraining,
+                      initialValue: selectedTraining,
                       isExpanded: true,
                       hint: const Text('Pilih Training'),
                       icon: const Icon(Icons.arrow_drop_down_circle_outlined),
@@ -202,7 +200,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   error: (err, stack) => Text('Gagal memuat batch: $err'),
                   data: (batches) {
                     return DropdownButtonFormField<int>(
-                      value: selectedBatch,
+                      initialValue: selectedBatch,
                       isExpanded: true,
                       hint: const Text('Pilih Batch'),
                       icon: const Icon(Icons.arrow_drop_down_circle_outlined),

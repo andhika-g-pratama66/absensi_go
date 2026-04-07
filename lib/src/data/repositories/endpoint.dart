@@ -11,8 +11,8 @@ class Endpoint {
   static const String checkOut = "$baseUrl/absen/check-out";
   static const String izin = "$baseUrl/izin";
   static const String deviceToken = "$baseUrl/device-token";
-  // static const String absenToday = "$baseUrl/device-token";
-  // static const String absenStat = "$baseUrl/device-token";
+  static const String absenToday = "$baseUrl/absen/today";
+  static const String absenStat = "$baseUrl/absen/stats";
   static const String history = "$baseUrl/absen/history";
   static const String users = "$baseUrl/absen/users";
   static const String forgotPassword = "$baseUrl/forgot-password";

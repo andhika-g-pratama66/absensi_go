@@ -1,104 +1,107 @@
 // To parse this JSON data, do
 //
-//     final checkInModel = checkInModelFromJson(jsonString);
+//     final izinModel = izinModelFromJson(jsonString);
 
 import 'dart:convert';
 
-CheckInModel checkInModelFromJson(String str) =>
-    CheckInModel.fromJson(json.decode(str));
+IzinModel izinModelFromJson(String str) => IzinModel.fromJson(json.decode(str));
 
-String checkInModelToJson(CheckInModel data) => json.encode(data.toJson());
+String izinModelToJson(IzinModel data) => json.encode(data.toJson());
 
-class CheckInModel {
+List<IzinModel> izinListFromJson(String str) =>
+    List<IzinModel>.from(json.decode(str).map((x) => IzinModel.fromJson(x)));
+
+String izinListToJson(List<IzinModel> data) =>
+    json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
+
+class IzinModel {
+  int? id;
   DateTime? attendanceDate;
-  String? checkIn;
   String? checkInTime;
-  String? checkOutTime;
-  String? checkInLocation;
   double? checkInLat;
   double? checkInLng;
+  String? checkInLocation;
   String? checkInAddress;
-  String? checkOutAddress;
   String? status;
   String? alasanIzin;
+  DateTime? createdAt;
+  DateTime? updatedAt;
 
-  CheckInModel({
+  IzinModel({
+    this.id,
     this.attendanceDate,
-    this.checkIn,
     this.checkInTime,
-    this.checkOutTime,
-    this.checkInLocation,
     this.checkInLat,
     this.checkInLng,
+    this.checkInLocation,
     this.checkInAddress,
-    this.checkOutAddress,
     this.status,
     this.alasanIzin,
+    this.createdAt,
+    this.updatedAt,
   });
 
-  CheckInModel copyWith({
+  IzinModel copyWith({
+    int? id,
     DateTime? attendanceDate,
-    String? checkIn,
     String? checkInTime,
-    String? checkOutTime,
-    String? checkInLocation,
     double? checkInLat,
     double? checkInLng,
+    String? checkInLocation,
     String? checkInAddress,
-    String? checkOutAddress,
     String? status,
     String? alasanIzin,
-  }) => CheckInModel(
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => IzinModel(
+    id: id ?? this.id,
     attendanceDate: attendanceDate ?? this.attendanceDate,
-    checkIn: checkIn ?? this.checkIn,
     checkInTime: checkInTime ?? this.checkInTime,
-    checkOutTime: checkOutTime ?? this.checkOutTime,
-    checkInLocation: checkInLocation ?? this.checkInLocation,
     checkInLat: checkInLat ?? this.checkInLat,
     checkInLng: checkInLng ?? this.checkInLng,
+    checkInLocation: checkInLocation ?? this.checkInLocation,
     checkInAddress: checkInAddress ?? this.checkInAddress,
-    checkOutAddress: checkOutAddress ?? this.checkOutAddress,
     status: status ?? this.status,
     alasanIzin: alasanIzin ?? this.alasanIzin,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
 
-  factory CheckInModel.fromJson(Map<String, dynamic> json) => CheckInModel(
+  factory IzinModel.fromJson(Map<String, dynamic> json) => IzinModel(
+    id: json["id"],
     attendanceDate: json["attendance_date"] == null
         ? null
         : DateTime.parse(json["attendance_date"]),
-    checkIn: json["check_in"] ?? json["check_in_time"],
-    checkInTime: json["check_in_time"] ?? json["check_in"],
-    checkOutTime: json["check_out_time"],
-    checkInLocation:
-        json["check_in_location"] ??
-        ((json["check_in_lat"] != null && json["check_in_lng"] != null)
-            ? "${json["check_in_lat"]},${json["check_in_lng"]}"
-            : null),
+    checkInTime: json["check_in_time"],
     checkInLat: json["check_in_lat"]?.toDouble(),
     checkInLng: json["check_in_lng"]?.toDouble(),
+    checkInLocation: json["check_in_location"],
     checkInAddress: json["check_in_address"],
-    checkOutAddress: json["check_out_address"],
     status: json["status"],
     alasanIzin: json["alasan_izin"],
+    createdAt: json["created_at"] == null
+        ? null
+        : DateTime.parse(json["created_at"]),
+    updatedAt: json["updated_at"] == null
+        ? null
+        : DateTime.parse(json["updated_at"]),
   );
 
   Map<String, dynamic> toJson() => {
+    "id": id,
     "attendance_date": attendanceDate == null
         ? null
         : "${attendanceDate!.year.toString().padLeft(4, '0')}-${attendanceDate!.month.toString().padLeft(2, '0')}-${attendanceDate!.day.toString().padLeft(2, '0')}",
-    "check_in": checkInTime ?? checkIn,
-    "check_in_time": checkInTime ?? checkIn,
-    "check_out_time": checkOutTime,
-    "check_in_location":
-        checkInLocation ??
-        ((checkInLat != null && checkInLng != null)
-            ? "$checkInLat,$checkInLng"
-            : null),
+    "check_in_time": checkInTime,
     "check_in_lat": checkInLat,
     "check_in_lng": checkInLng,
+    "check_in_location": checkInLocation,
     "check_in_address": checkInAddress,
-    "check_out_address": checkOutAddress,
     "status": status,
     "alasan_izin": alasanIzin,
+    "created_at": createdAt?.toIso8601String(),
+    "updated_at": updatedAt?.toIso8601String(),
   };
+
+  bool get isIzin => status == 'izin';
 }

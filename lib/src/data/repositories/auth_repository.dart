@@ -9,8 +9,6 @@ import 'package:absensi_go/src/data/models/auth_model.dart';
 import 'package:absensi_go/src/data/models/register_model.dart';
 import 'package:absensi_go/src/data/repositories/endpoint.dart';
 import 'package:absensi_go/src/data/repositories/local_storage.dart';
-import 'package:absensi_go/src/features/auth/provider/auth_provider.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
 class AuthRepository {
@@ -48,8 +46,11 @@ class AuthRepository {
 
           final token = decoded['data']?['token'] ?? decoded['token'];
           if (token != null) {
+            // ✅ UNLIMITED SESSION: Simpan token tanpa expiry
+            // Ini akan mengatur unlimited_session = true
             await storage.saveToken(token);
-            await storage.saveUser(user); // Use instance method, not static
+            await storage.setUnlimitedSession();
+            await storage.saveUser(user);
           }
 
           return user;

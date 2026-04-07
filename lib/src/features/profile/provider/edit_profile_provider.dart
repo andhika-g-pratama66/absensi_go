@@ -8,7 +8,6 @@ import 'package:absensi_go/src/features/auth/provider/auth_provider.dart';
 import 'package:absensi_go/src/features/profile/repositories/profile_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image/image.dart' as img;
 
 class EditProfileState {
   final bool isLoading;
@@ -206,14 +205,6 @@ class EditProfileNotifier extends Notifier<EditProfileState> {
   }
 
   /// Clear selected image
-  void clearImage() {
-    state = state.copyWith(
-      base64Image: null,
-      photoUrl: null,
-      imageSize: null,
-      errorMessage: null,
-    );
-  }
 
   /// Get formatted file size for display
   String? get formattedImageSize {

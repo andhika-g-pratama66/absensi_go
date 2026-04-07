@@ -145,6 +145,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         await ref
                             .read(authProvider.notifier)
                             .login(email, password);
+
+                        if (!context.mounted) return;
+
                         LocalStorageService().saveToken(
                           ref.read(authProvider).value?.data?.token ?? "",
                         );

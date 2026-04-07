@@ -1,83 +1,81 @@
 import 'package:absensi_go/src/features/check_in/models/check_in_model.dart';
 import 'package:absensi_go/src/data/repositories/check_in_repository.dart';
+import 'package:absensi_go/src/features/check_out/provider/check_out_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:intl/intl.dart';
-import 'package:intl/intl.dart';
 
+// ── CheckInState Class ──────────────────────────────────
 class CheckInState {
-  final bool isLoadingLocation;
-  final bool isSubmitting;
   final double? latitude;
   final double? longitude;
   final String? address;
-  final CheckInModel? todayCheckIn;
+  final bool isLoadingLocation;
+  final bool isSubmitting;
   final String? errorMessage;
+  final CheckInModel? todayCheckIn;
 
   const CheckInState({
-    this.isLoadingLocation = false,
-    this.isSubmitting = false,
     this.latitude,
     this.longitude,
     this.address,
-    this.todayCheckIn,
+    this.isLoadingLocation = false,
+    this.isSubmitting = false,
     this.errorMessage,
+    this.todayCheckIn,
   });
 
   bool get hasLocation => latitude != null && longitude != null;
   bool get hasCheckedIn => todayCheckIn != null;
 
   CheckInState copyWith({
-    bool? isLoadingLocation,
-    bool? isSubmitting,
     double? latitude,
     double? longitude,
     String? address,
-    CheckInModel? todayCheckIn,
+    bool? isLoadingLocation,
+    bool? isSubmitting,
     String? errorMessage,
+    CheckInModel? todayCheckIn,
   }) {
     return CheckInState(
-      isLoadingLocation: isLoadingLocation ?? this.isLoadingLocation,
-      isSubmitting: isSubmitting ?? this.isSubmitting,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       address: address ?? this.address,
+      isLoadingLocation: isLoadingLocation ?? this.isLoadingLocation,
+      isSubmitting: isSubmitting ?? this.isSubmitting,
+      errorMessage: errorMessage, // null clears it
       todayCheckIn: todayCheckIn ?? this.todayCheckIn,
-      errorMessage: errorMessage,
     );
   }
 }
 
-class CheckInNotifier extends StateNotifier<CheckInState> {
-  final CheckInRepository _repository;
+// ── Notifier ────────────────────────────────────────────
 
-  CheckInNotifier(this._repository) : super(const CheckInState()) {
-    getLocation();
-    loadTodayCheckIn();
-  }
+class CheckInNotifier extends AsyncNotifier<CheckInState> {
+  CheckInRepository get _repository => ref.read(checkInRepositoryProvider);
 
-  Future<void> loadTodayCheckIn() async {
-    try {
-      final todayCheckIn = await _repository.getTodayCheckIn();
-      state = state.copyWith(todayCheckIn: todayCheckIn);
-    } catch (e) {
-      // Ignore failure here; user can still check in.
-    }
+  @override
+  Future<CheckInState> build() async {
+    // This runs when the provider is first accessed
+    final todayCheckIn = await _repository.getTodayCheckIn();
+    
+    // Return initial state with fetched data
+    return CheckInState(todayCheckIn: todayCheckIn);
   }
 
   Future<void> getLocation() async {
-    state = state.copyWith(isLoadingLocation: true, errorMessage: null);
+    // FIX: Replaced valueOrNull with value
+    final currentState = state.value ?? const CheckInState();
+    state = AsyncData(currentState.copyWith(isLoadingLocation: true, errorMessage: null));
 
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        state = state.copyWith(
+        state = AsyncData(state.value!.copyWith(
           isLoadingLocation: false,
-          errorMessage:
-              'Layanan lokasi tidak aktif. Aktifkan GPS terlebih dahulu.',
-        );
+          errorMessage: 'Layanan lokasi tidak aktif. Aktifkan GPS terlebih dahulu.',
+        ));
         return;
       }
 
@@ -85,27 +83,24 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          state = state.copyWith(
+          state = AsyncData(state.value!.copyWith(
             isLoadingLocation: false,
             errorMessage: 'Izin lokasi ditolak.',
-          );
+          ));
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        state = state.copyWith(
+        state = AsyncData(state.value!.copyWith(
           isLoadingLocation: false,
-          errorMessage:
-              'Izin lokasi ditolak permanen. Buka pengaturan untuk mengaktifkan.',
-        );
+          errorMessage: 'Izin lokasi ditolak permanen. Buka pengaturan untuk mengaktifkan.',
+        ));
         return;
       }
 
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
 
       final placemarks = await placemarkFromCoordinates(
@@ -125,61 +120,68 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
         ].where((e) => e != null && e.isNotEmpty).join(', ');
       }
 
-      state = state.copyWith(
+      state = AsyncData(state.value!.copyWith(
         isLoadingLocation: false,
         latitude: position.latitude,
         longitude: position.longitude,
         address: address,
-      );
+      ));
     } catch (e) {
-      state = state.copyWith(
+      state = AsyncData(state.value!.copyWith(
         isLoadingLocation: false,
         errorMessage: 'Gagal mendapatkan lokasi: $e',
-      );
+      ));
     }
   }
 
   Future<bool> submitCheckIn() async {
-    if (!state.hasLocation) return false;
+    // FIX: Replaced valueOrNull with value
+    final currentState = state.value;
+    if (currentState == null || !currentState.hasLocation) return false;
 
-    state = state.copyWith(isSubmitting: true, errorMessage: null);
+    state = AsyncData(currentState.copyWith(isSubmitting: true, errorMessage: null));
 
     try {
       final now = DateTime.now();
       final String formattedTime = DateFormat('HH:mm').format(now);
+
       final model = CheckInModel(
         attendanceDate: now,
         checkIn: formattedTime,
         checkInTime: formattedTime,
-        checkInLat: state.latitude,
-        checkInLng: state.longitude,
-        checkInLocation: state.hasLocation
-            ? '${state.latitude},${state.longitude}'
-            : null,
-        checkInAddress: state.address,
+        checkInLat: currentState.latitude,
+        checkInLng: currentState.longitude,
+        checkInLocation: '${currentState.latitude},${currentState.longitude}',
+        checkInAddress: currentState.address,
         status: 'masuk',
       );
 
       final savedCheckIn = await _repository.submitCheckIn(model);
 
-      state = state.copyWith(isSubmitting: false, todayCheckIn: savedCheckIn);
+      state = AsyncData(state.value!.copyWith(
+        isSubmitting: false,
+        todayCheckIn: savedCheckIn,
+      ));
+
+      // Invalidate checkOutProvider to ensure it knows check-in happened
+      ref.invalidate(checkOutProvider);
+
       return true;
     } on CheckInException catch (e) {
-      state = state.copyWith(isSubmitting: false, errorMessage: e.message);
+      state = AsyncData(state.value!.copyWith(isSubmitting: false, errorMessage: e.message));
       return false;
     } catch (e) {
-      state = state.copyWith(
+      state = AsyncData(state.value!.copyWith(
         isSubmitting: false,
         errorMessage: 'Gagal check in: $e',
-      );
+      ));
       return false;
     }
   }
 }
 
-// ── State Provider ────────────────────────────────────────
+// ── Provider ──────────────────────────────────────────
 
-final checkInProvider =
-    StateNotifierProvider.autoDispose<CheckInNotifier, CheckInState>(
-      (ref) => CheckInNotifier(ref.read(checkInRepositoryProvider)),
-    );
+final checkInProvider = AsyncNotifierProvider<CheckInNotifier, CheckInState>(() {
+  return CheckInNotifier();
+});

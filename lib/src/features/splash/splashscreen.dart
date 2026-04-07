@@ -1,4 +1,5 @@
 import 'package:absensi_go/src/features/auth/provider/auth_provider.dart';
+import 'package:absensi_go/src/features/splash/provider/app_start_up_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -32,20 +33,6 @@ class _SplashPageState extends ConsumerState<SplashPage>
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.forward();
-
-    Future.microtask(() async {
-      await Future.delayed(const Duration(seconds: 2));
-      if (!mounted) return;
-
-      // pakai await karena getToken() sudah async
-      final token = await ref.read(localStorageProvider).getToken();
-
-      if (token != null && token.isNotEmpty) {
-        context.go('/main');
-      } else {
-        context.go('/login');
-      }
-    });
   }
 
   @override
@@ -54,8 +41,37 @@ class _SplashPageState extends ConsumerState<SplashPage>
     super.dispose();
   }
 
+  void _navigateToNext(WidgetRef ref) {
+    if (!mounted) return;
+
+    // Check login status directly from authProvider state
+    final authState = ref.read(authProvider);
+    final isLoggedIn = authState.maybeWhen(
+      data: (user) => user != null,
+      orElse: () => false,
+    );
+
+    if (isLoggedIn) {
+      context.go('/main');
+    } else {
+      context.go('/login');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Listen to app startup completion
+    ref.listen(appStartProvider, (previous, next) {
+      next.when(
+        data: (_) => _navigateToNext(ref),
+        error: (error, stack) {
+          // Even on error, we try to navigate (fallback)
+          _navigateToNext(ref);
+        },
+        loading: () => null,
+      );
+    });
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       body: Stack(
@@ -78,10 +94,10 @@ class _SplashPageState extends ConsumerState<SplashPage>
                       width: 72,
                       height: 72,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
+                        color: Colors.white.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.12),
+                          color: Colors.white.withValues(alpha: 0.12),
                         ),
                       ),
                       child: const Icon(
@@ -105,7 +121,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
                       'Sistem Kehadiran Digital',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.white.withOpacity(0.4),
+                        color: Colors.white.withValues(alpha: 0.4),
                       ),
                     ),
                   ],
@@ -127,7 +143,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
                   'v1.0.0',
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.white.withOpacity(0.25),
+                    color: Colors.white.withValues(alpha: 0.25),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -145,7 +161,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withOpacity(opacity)),
+        border: Border.all(color: Colors.white.withValues(alpha: opacity)),
       ),
     );
   }
@@ -157,13 +173,13 @@ class _SplashPageState extends ConsumerState<SplashPage>
         return TweenAnimationBuilder<double>(
           tween: Tween(begin: 0.3, end: 1.0),
           duration: Duration(milliseconds: 600 + (i * 200)),
-          builder: (_, value, __) => Container(
+          builder: (context, value, child) => Container(
             margin: const EdgeInsets.symmetric(horizontal: 3),
             width: 5,
             height: 5,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withOpacity(value),
+              color: Colors.white.withValues(alpha: value),
             ),
           ),
         );

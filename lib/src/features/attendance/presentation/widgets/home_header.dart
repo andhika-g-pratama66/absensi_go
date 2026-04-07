@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:absensi_go/src/core/constants/app_colors.dart';
 import 'package:absensi_go/src/data/repositories/endpoint.dart';
@@ -51,7 +50,7 @@ class HomeHeader extends StatelessWidget {
                           'Memuat...',
                           style: TextStyle(color: Colors.white54, fontSize: 14),
                         ),
-                        error: (_, __) => const Text(
+                        error: (error, stackTrace) => const Text(
                           'Error',
                           style: TextStyle(color: Colors.white54, fontSize: 14),
                         ),
@@ -191,7 +190,7 @@ class HomeHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white12),
       ),

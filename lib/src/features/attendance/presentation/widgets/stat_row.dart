@@ -1,46 +1,59 @@
+import 'package:absensi_go/src/features/attendance/provider/attendance_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class StatRow extends StatelessWidget {
+class StatRow extends ConsumerWidget {
   const StatRow({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final stats = [
-      {'label': 'Hadir', 'value': '22'},
-      {'label': 'Sakit', 'value': '1'},
-      {'label': 'Terlambat', 'value': '2'},
-    ];
-    return Row(
-      children: stats.map((s) {
-        return Expanded(
-          child: Container(
-            margin: EdgeInsets.only(right: s != stats.last ? 8 : 0),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.black.withOpacity(0.06)),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  s['value']!,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF1A1A2E),
-                  ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final attendanceState = ref.watch(attendanceProvider);
+
+    return attendanceState.when(
+      data: (state) {
+        final stats = [
+          {'label': 'Hadir', 'value': (state.stats?.totalMasuk ?? 0).toString()},
+          {'label': 'Izin', 'value': (state.stats?.totalIzin ?? 0).toString()},
+          {'label': 'Total', 'value': (state.stats?.totalAbsen ?? 0).toString()},
+        ];
+
+        return Row(
+          children: stats.map((s) {
+            return Expanded(
+              child: Container(
+                margin: EdgeInsets.only(right: s != stats.last ? 8 : 0),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border:
+                      Border.all(color: Colors.black.withValues(alpha: 0.06)),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  s['label']!,
-                  style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                child: Column(
+                  children: [
+                    Text(
+                      s['value']!,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF1A1A2E),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      s['label']!,
+                      style:
+                          TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Error: $error')),
     );
   }
 }

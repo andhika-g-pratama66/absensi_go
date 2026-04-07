@@ -230,7 +230,7 @@ class ProfilPage extends ConsumerWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.black.withOpacity(0.06)),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
         ),
         child: IntrinsicHeight(
           child: Row(
@@ -238,12 +238,12 @@ class ProfilPage extends ConsumerWidget {
               _statItem('22', 'Hadir'),
               VerticalDivider(
                 width: 0.5,
-                color: Colors.black.withOpacity(0.06),
+                color: Colors.black.withValues(alpha: 0.06),
               ),
               _statItem('2', 'Terlambat'),
               VerticalDivider(
                 width: 0.5,
-                color: Colors.black.withOpacity(0.06),
+                color: Colors.black.withValues(alpha: 0.06),
               ),
               _statItem('1', 'Sakit'),
             ],
@@ -301,7 +301,7 @@ class ProfilPage extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black.withOpacity(0.06)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
       ),
       child: Column(
         children: [
@@ -369,7 +369,7 @@ class ProfilPage extends ConsumerWidget {
       decoration: BoxDecoration(
         border: isLast
             ? null
-            : Border(bottom: BorderSide(color: Colors.black.withOpacity(0.06))),
+            : Border(bottom: BorderSide(color: Colors.black.withValues(alpha: 0.06))),
       ),
       child: Row(
         children: [
@@ -417,7 +417,7 @@ class ProfilPage extends ConsumerWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.black.withOpacity(0.06)),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
         ),
         child: Row(
           children: [
@@ -475,7 +475,7 @@ class ProfilPage extends ConsumerWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:absensi_go/src/core/errors/api_execption.dart';
 import 'package:absensi_go/src/data/models/auth_model.dart';
@@ -103,14 +102,14 @@ class ProfileRepository {
     while (attempts < maxRetries) {
       try {
         return await request();
-      } on SocketException catch (e) {
+      } on SocketException catch (_) {
         attempts++;
         if (attempts >= maxRetries) rethrow;
         log(
           '[ProfileRepository] Network error, retrying... ($attempts/$maxRetries)',
         );
         await Future.delayed(delay * attempts);
-      } on TimeoutException catch (e) {
+      } on TimeoutException catch (_) {
         attempts++;
         if (attempts >= maxRetries) rethrow;
         log('[ProfileRepository] Timeout, retrying... ($attempts/$maxRetries)');
@@ -150,7 +149,7 @@ class ProfileRepository {
     final body = {
       'name': name,
       'email': email,
-      if (photoUrl != null) 'profile_photo_url': photoUrl,
+      'profile_photo_url': ?photoUrl,
     };
     final response = await http.put(
       Uri.parse(Endpoint.profile),

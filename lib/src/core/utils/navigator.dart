@@ -58,7 +58,7 @@ extension ExtendedNavigator on BuildContext {
     );
   }
 
-  void pop([result]) async {
+  void pop([dynamic result]) {
     return Navigator.of(this).pop(result);
   }
 }

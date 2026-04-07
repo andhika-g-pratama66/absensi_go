@@ -1,12 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:absensi_go/src/data/models/auth_model.dart';
 import 'package:absensi_go/src/features/auth/provider/auth_provider.dart';
 import 'package:absensi_go/src/features/profile/provider/edit_profile_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 
 class EditProfilPage extends ConsumerStatefulWidget {
   const EditProfilPage({super.key});
@@ -144,7 +142,7 @@ class _EditProfilPageState extends ConsumerState<EditProfilPage> {
           children: [
             CircleAvatar(
               radius: 50,
-              backgroundColor: const Color(0xFF1A1A2E).withOpacity(0.1),
+              backgroundColor: const Color(0xFF1A1A2E).withValues(alpha: 0.1),
               // Display base64 if available, otherwise fallback to text initial
               backgroundImage: imageBytes != null
                   ? MemoryImage(imageBytes)

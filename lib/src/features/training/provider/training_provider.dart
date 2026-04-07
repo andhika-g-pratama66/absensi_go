@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:absensi_go/src/data/models/training_model.dart';
 import 'package:absensi_go/src/data/repositories/training_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,8 +19,8 @@ final trainingListProvider = FutureProvider.autoDispose<List<Datum>>((
 
     return training;
   } catch (e) {
-    print('=== API ERROR ===');
-    print(e.toString()); // Look at your debug console!
+    log('=== API ERROR ===');
+    log(e.toString()); // Look at your debug console!
     throw Exception('Error fetching training: $e');
   }
 });

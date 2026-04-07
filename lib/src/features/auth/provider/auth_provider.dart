@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:absensi_go/src/data/models/auth_model.dart';
 import 'package:absensi_go/src/data/repositories/local_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:absensi_go/src/features/profile/repositories/profile_repository.dart';
 import '../../../data/repositories/auth_repository.dart';
 
 final localStorageProvider = Provider<LocalStorageService>((ref) {
@@ -63,11 +64,11 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
   AuthRepository get _repository => ref.read(authRepositoryProvider);
 
   @override
-  @override
   Future<UserModel?> build() async {
     log('[AuthNotifier] App restarted! Checking local storage...');
 
-    final token = await _repository.storage.getToken();
+    // ✅ Skip expiry check on startup - server will validate token on first API call
+    final token = await _repository.storage.getToken(checkExpiry: false);
     log('[AuthNotifier] Token found: $token');
 
     if (token == null || token.isEmpty) {
@@ -129,6 +130,18 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
 
     state = AsyncData(merged);
     log('[AuthNotifier] Successfully updated state!');
+  }
+
+  Future<void> refreshUser() async {
+    try {
+      final repo = ref.read(profileRepositoryProvider);
+      final user = await repo.getUser();
+      if (user != null) {
+        await updateUser(user);
+      }
+    } catch (e) {
+      log('[AuthNotifier] refreshUser error: $e');
+    }
   }
 
   Future<void> logout() async {

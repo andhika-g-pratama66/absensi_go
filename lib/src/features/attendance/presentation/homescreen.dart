@@ -61,7 +61,7 @@ class _BottomNavBar extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.black.withOpacity(0.06))),
+        border: Border(top: BorderSide(color: Colors.black.withValues(alpha: 0.06))),
       ),
       child: SafeArea(
         child: Padding(
@@ -103,13 +103,13 @@ class _BottomNavBar extends ConsumerWidget {
     const darkBg = Color(0xFF1A1A2E);
     final isActive = index == currentIndex;
     return GestureDetector(
-      onTap: () => ref.read(bottomNavIndexProvider.notifier).state = index,
+      onTap: () => ref.read(bottomNavIndexProvider.notifier).setIndex(index),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? darkBg.withOpacity(0.08) : Colors.transparent,
+          color: isActive ? darkBg.withValues(alpha: 0.08) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
