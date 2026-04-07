@@ -1,8 +1,7 @@
 import 'package:absensi_go/src/data/models/auth_model.dart';
-import 'package:absensi_go/src/data/repositories/local_storage.dart';
 import 'package:absensi_go/src/features/attendance/presentation/pages/history_page.dart';
 import 'package:absensi_go/src/features/attendance/presentation/pages/home_page.dart';
-import 'package:absensi_go/src/features/attendance/presentation/pages/profile_page.dart';
+import 'package:absensi_go/src/features/profile/presentation/pages/profile_page.dart';
 import 'package:absensi_go/src/features/attendance/provider/bottom_nav_index_provider.dart';
 import 'package:absensi_go/src/features/auth/presentation/login_view.dart';
 import 'package:absensi_go/src/features/auth/provider/auth_provider.dart';

@@ -23,26 +23,6 @@ class AuthRepository {
     "Content-Type": "application/json",
   };
 
-  Future<UserModel?> getUser() async {
-    final token = await storage
-        .getToken(); // FIX: use injected instance to get token
-    if (token == null || token.isEmpty) return null;
-    final response = await http.get(
-      Uri.parse(Endpoint.profile),
-      headers: {..._jsonHeaders, "Authorization": "Bearer $token"},
-    );
-    if (response.statusCode == 200) {
-      final decoded = json.decode(response.body);
-      return UserModel.fromJson(decoded);
-    } else {
-      log(
-        '[GetUser] Failed to fetch user: ${response.statusCode} - ${response.body}',
-      );
-      return null; // Return null if token is invalid or user not found
-    }
-    // Kalau hanya dari local storage
-  }
-
   /// FIX #1: Added timeout, token saving, and proper error handling
   Future<UserModel> login(String email, String password) async {
     try {

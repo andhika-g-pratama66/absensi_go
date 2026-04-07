@@ -440,54 +440,84 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     final canSubmit =
         state.hasLocation && !state.isSubmitting && !state.isLoadingLocation;
 
-    return SizedBox(
-      width: double.infinity,
-      child: TextButton(
-        onPressed: canSubmit
-            ? () async {
-                final success = await ref
-                    .read(checkInProvider.notifier)
-                    .submitCheckIn();
-                if (success && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Check in berhasil!'),
-                      backgroundColor: const Color(0xFF3B6D11),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  );
-                  Navigator.pop(context);
-                }
-              }
-            : null,
-        style: TextButton.styleFrom(
-          backgroundColor: canSubmit
-              ? const Color(0xFF1A1A2E)
-              : Colors.grey.shade200,
-          foregroundColor: canSubmit ? Colors.white : Colors.grey.shade400,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          disabledBackgroundColor: Colors.grey.shade200,
-        ),
-        child: state.isSubmitting
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : const Text(
-                'Check In Sekarang',
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: TextButton(
+            onPressed: canSubmit
+                ? () async {
+                    final success = await ref
+                        .read(checkInProvider.notifier)
+                        .submitCheckIn();
+                    final updatedState = ref.read(checkInProvider);
+                    if (context.mounted) {
+                      if (success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Check in berhasil!'),
+                            backgroundColor: const Color(0xFF3B6D11),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        );
+                        Navigator.pop(context);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              updatedState.errorMessage ??
+                                  'Gagal check in. Silakan coba lagi.',
+                            ),
+                            backgroundColor: const Color(0xFF993C1D),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  }
+                : null,
+            style: TextButton.styleFrom(
+              backgroundColor: canSubmit
+                  ? const Color(0xFF1A1A2E)
+                  : Colors.grey.shade200,
+              foregroundColor: canSubmit ? Colors.white : Colors.grey.shade400,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
-      ),
+              disabledBackgroundColor: Colors.grey.shade200,
+            ),
+            child: state.isSubmitting
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text(
+                    'Check In Sekarang',
+                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
+                  ),
+          ),
+        ),
+        if (state.errorMessage != null && !state.isSubmitting)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(
+              state.errorMessage!,
+              style: const TextStyle(color: Color(0xFF993C1D), fontSize: 13),
+            ),
+          ),
+      ],
     );
   }
 }

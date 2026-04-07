@@ -1,13 +1,34 @@
 import 'package:absensi_go/src/core/utils/navigator.dart';
 import 'package:absensi_go/src/features/check_in/presentation/check_in.dart';
+import 'package:absensi_go/src/features/check_in/provider/check_in_provider.dart';
 import 'package:absensi_go/src/features/attendance/presentation/check_out.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ActionButtons extends StatelessWidget {
+class ActionButtons extends ConsumerWidget {
   const ActionButtons({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(checkInProvider);
+    final hasCheckedIn = state.hasCheckedIn;
+    final statusLabel = hasCheckedIn ? 'Hadir' : 'Belum';
+    final timeValue = state.todayCheckIn?.checkInTime?.trim().isNotEmpty == true
+        ? state.todayCheckIn!.checkInTime!.trim()
+        : state.todayCheckIn?.checkIn?.trim().isNotEmpty == true
+        ? state.todayCheckIn!.checkIn!.trim()
+        : null;
+    final time = hasCheckedIn ? timeValue ?? '--:--' : '--:--';
+    final statusBg = hasCheckedIn
+        ? const Color(0xFFEAF3DE)
+        : Colors.grey.shade100;
+    final statusTextColor = hasCheckedIn
+        ? const Color(0xFF3B6D11)
+        : Colors.grey.shade500;
+    final timeColor = hasCheckedIn
+        ? const Color(0xFF1a1a2e)
+        : Colors.grey.shade400;
+
     return Row(
       children: [
         Expanded(
@@ -15,10 +36,13 @@ class ActionButtons extends StatelessWidget {
             context: context,
             icon: Icons.login_rounded,
             label: 'Masuk',
-            time: '07:55',
+            time: time,
             iconBg: const Color(0xFFEAF3DE),
             iconColor: const Color(0xFF3B6D11),
-            statusLabel: 'Hadir',
+            statusLabel: statusLabel,
+            statusBg: statusBg,
+            statusTextColor: statusTextColor,
+            timeColor: timeColor,
             onTap: () => context.push(const CheckInScreen()),
           ),
         ),
@@ -66,7 +90,7 @@ class ActionButtons extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.black.withOpacity(0.06)),
+          border: Border.all(color: const Color.fromRGBO(0, 0, 0, 0.06)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

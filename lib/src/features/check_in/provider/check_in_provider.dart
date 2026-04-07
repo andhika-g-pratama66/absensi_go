@@ -1,10 +1,10 @@
-import 'package:absensi_go/src/data/models/check_in_model.dart';
+import 'package:absensi_go/src/features/check_in/models/check_in_model.dart';
 import 'package:absensi_go/src/data/repositories/check_in_repository.dart';
-import 'package:absensi_go/src/features/auth/provider/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:intl/intl.dart';
 import 'package:intl/intl.dart';
 
 class CheckInState {
@@ -13,6 +13,7 @@ class CheckInState {
   final double? latitude;
   final double? longitude;
   final String? address;
+  final CheckInModel? todayCheckIn;
   final String? errorMessage;
 
   const CheckInState({
@@ -21,10 +22,12 @@ class CheckInState {
     this.latitude,
     this.longitude,
     this.address,
+    this.todayCheckIn,
     this.errorMessage,
   });
 
   bool get hasLocation => latitude != null && longitude != null;
+  bool get hasCheckedIn => todayCheckIn != null;
 
   CheckInState copyWith({
     bool? isLoadingLocation,
@@ -32,6 +35,7 @@ class CheckInState {
     double? latitude,
     double? longitude,
     String? address,
+    CheckInModel? todayCheckIn,
     String? errorMessage,
   }) {
     return CheckInState(
@@ -40,6 +44,7 @@ class CheckInState {
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       address: address ?? this.address,
+      todayCheckIn: todayCheckIn ?? this.todayCheckIn,
       errorMessage: errorMessage,
     );
   }
@@ -50,6 +55,16 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
 
   CheckInNotifier(this._repository) : super(const CheckInState()) {
     getLocation();
+    loadTodayCheckIn();
+  }
+
+  Future<void> loadTodayCheckIn() async {
+    try {
+      final todayCheckIn = await _repository.getTodayCheckIn();
+      state = state.copyWith(todayCheckIn: todayCheckIn);
+    } catch (e) {
+      // Ignore failure here; user can still check in.
+    }
   }
 
   Future<void> getLocation() async {
@@ -88,7 +103,9 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
       }
 
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
 
       final placemarks = await placemarkFromCoordinates(
@@ -129,20 +146,23 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
 
     try {
       final now = DateTime.now();
-      final isLate = now.isAfter(DateTime(now.year, now.month, now.day, 8, 0));
-
+      final String formattedTime = DateFormat('HH:mm').format(now);
       final model = CheckInModel(
         attendanceDate: now,
-        checkIn: DateFormat('HH:mm:ss').format(now),
+        checkIn: formattedTime,
+        checkInTime: formattedTime,
         checkInLat: state.latitude,
         checkInLng: state.longitude,
+        checkInLocation: state.hasLocation
+            ? '${state.latitude},${state.longitude}'
+            : null,
         checkInAddress: state.address,
-        status: isLate ? 'terlambat' : 'tepat_waktu',
+        status: 'masuk',
       );
 
-      await _repository.submitCheckIn(model);
+      final savedCheckIn = await _repository.submitCheckIn(model);
 
-      state = state.copyWith(isSubmitting: false);
+      state = state.copyWith(isSubmitting: false, todayCheckIn: savedCheckIn);
       return true;
     } on CheckInException catch (e) {
       state = state.copyWith(isSubmitting: false, errorMessage: e.message);
@@ -156,20 +176,6 @@ class CheckInNotifier extends StateNotifier<CheckInState> {
     }
   }
 }
-
-// ── Repository Provider ───────────────────────────────────
-
-final checkInRepositoryProvider = Provider<CheckInRepository>((ref) {
-  final repo = CheckInRepositoryImpl();
-
-  ref.watch(tokenProvider).whenData((token) {
-    if (token != null) {
-      repo.setAuthToken(token);
-    }
-  });
-
-  return repo;
-});
 
 // ── State Provider ────────────────────────────────────────
 

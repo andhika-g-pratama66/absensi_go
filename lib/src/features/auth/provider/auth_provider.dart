@@ -1,7 +1,8 @@
+import 'dart:developer';
+
 import 'package:absensi_go/src/data/models/auth_model.dart';
 import 'package:absensi_go/src/data/repositories/local_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import '../../../data/repositories/auth_repository.dart';
 
 final localStorageProvider = Provider<LocalStorageService>((ref) {
@@ -12,27 +13,36 @@ final authRepositoryProvider = Provider(
   (ref) => AuthRepository(ref.watch(localStorageProvider)),
 );
 
-final authProvider =
-    StateNotifierProvider<AuthNotifier, AsyncValue<UserModel?>>((ref) {
-      return AuthNotifier(ref.watch(authRepositoryProvider));
-    });
+// ✅ Changed to AsyncNotifierProvider
+final authProvider = AsyncNotifierProvider<AuthNotifier, UserModel?>(() {
+  return AuthNotifier();
+});
 
-// Provider untuk get current user dari state
 final currentUserProvider = Provider<UserModel?>((ref) {
-  return ref.watch(authProvider).asData?.value;
+  return ref
+      .watch(authProvider)
+      .maybeWhen(
+        data: (user) => user, // ✅ Add this line!
+        orElse: () => null,
+      );
 });
 
-// Provider untuk cek apakah user sudah login
 final isLoggedInProvider = Provider<bool>((ref) {
-  final user = ref.watch(currentUserProvider);
-  return user != null;
+  final authState = ref.watch(authProvider);
+
+  return authState.maybeWhen(
+    data: (user) => user != null,
+    // ✅ Keep this! It protects the router during the build() loading phase
+    loading: () => true,
+    orElse: () => false,
+  );
 });
 
-// Provider untuk get token dari SharedPreferences
 final tokenProvider = FutureProvider<String?>((ref) async {
   return await ref.read(localStorageProvider).getToken();
 });
 
+// --- LoginState (unchanged) ---
 class LoginState {
   final bool isObscured;
   final bool isLoading;
@@ -47,43 +57,83 @@ class LoginState {
   }
 }
 
-class AuthNotifier extends StateNotifier<AsyncValue<UserModel?>> {
-  final AuthRepository repository;
+// ✅ Extends AsyncNotifier. Notice we drop AsyncValue from the generic type!
+class AuthNotifier extends AsyncNotifier<UserModel?> {
+  // Helper getter to easily access the repository
+  AuthRepository get _repository => ref.read(authRepositoryProvider);
 
-  AuthNotifier(this.repository) : super(const AsyncValue.data(null)) {
-    _init(); // auto load user saat app start
-  }
+  @override
+  @override
+  Future<UserModel?> build() async {
+    log('[AuthNotifier] App restarted! Checking local storage...');
 
-  // Load user dari token yang tersimpan
-  Future<void> _init() async {
+    final token = await _repository.storage.getToken();
+    log('[AuthNotifier] Token found: $token');
+
+    if (token == null || token.isEmpty) {
+      log(
+        '[AuthNotifier] Token is null or empty. Returning null (logging out).',
+      );
+      return null;
+    }
+
     try {
-      final token = await repository.storage.getToken();
-
-      if (token == null || token.isEmpty) {
-        state = const AsyncValue.data(null);
-        return;
-      }
-
-      // Load user dari SharedPreferences, tidak perlu hit API
-      final user = await repository.storage.getUser();
-      state = AsyncValue.data(user);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      final user = await _repository.storage.getUser();
+      log(
+        '[AuthNotifier] User fetched from storage: ${user?.data?.user?.name}',
+      );
+      return user;
+    } catch (e) {
+      log('[AuthNotifier] ERROR reading user from storage: $e');
+      return null;
     }
   }
 
   Future<void> login(String email, String password) async {
-    state = const AsyncValue.loading();
-    try {
-      final user = await repository.login(email, password);
-      state = AsyncValue.data(user);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
+    state = const AsyncLoading(); // Set loading while fetching
+
+    // AsyncValue.guard automatically catches errors and sets AsyncError,
+    // or sets AsyncData if successful. It's much cleaner than try/catch!
+    state = await AsyncValue.guard(() async {
+      return await _repository.login(email, password);
+    });
+  }
+
+  Future<void> updateUser(User updatedUser) async {
+    final current = await future;
+
+    if (current == null) {
+      log('[AuthNotifier] Cannot update user: Current state is null!');
+      return;
     }
+
+    // 1. Grab the old user data before we overwrite it
+    final oldUser = current.data?.user;
+
+    // 2. ✅ THE FIX: Create a safely merged user.
+    // If the API didn't return a batch or training, keep the old ones!
+    final safeUpdatedUser = updatedUser.copyWith(
+      batch: updatedUser.batch ?? oldUser?.batch,
+      training: updatedUser.training ?? oldUser?.training,
+      // If profilePhoto also disappears, add it here too:
+      profilePhoto: updatedUser.profilePhoto ?? oldUser?.profilePhoto,
+    );
+
+    // 3. Inject our safely merged user into the main state
+    final merged = current.copyWith(
+      data: current.data?.copyWith(user: safeUpdatedUser),
+    );
+
+    log('[AuthNotifier] Saving updated user to LocalStorage...');
+    await _repository.storage.saveUser(merged);
+
+    state = AsyncData(merged);
+    log('[AuthNotifier] Successfully updated state!');
   }
 
   Future<void> logout() async {
-    await repository.logout();
-    state = const AsyncValue.data(null);
+    state = const AsyncLoading();
+    await _repository.logout();
+    state = const AsyncData(null);
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:io';
-import 'package:absensi_go/src/data/models/check_in_model.dart';
+import 'package:absensi_go/src/features/auth/provider/auth_provider.dart';
+import 'package:absensi_go/src/features/check_in/models/check_in_model.dart';
 import 'package:absensi_go/src/data/repositories/endpoint.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,10 +57,20 @@ class CheckInRepositoryImpl implements CheckInRepository {
   @override
   Future<CheckInModel?> getTodayCheckIn() async {
     try {
-      final response = await _dio.get('/attendance/check-in/today');
+      final now = DateTime.now();
+      final response = await _dio.get(
+        '/absen/today',
+        queryParameters: {
+          'attendance_date':
+              '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}',
+        },
+      );
 
       if (response.statusCode == 200) {
-        final data = response.data['data'];
+        final rawData = response.data;
+        final data = rawData is Map<String, dynamic>
+            ? rawData['data'] ?? rawData
+            : rawData;
         if (data == null) return null;
         return CheckInModel.fromJson(data);
       }
@@ -131,5 +142,13 @@ class CheckInException implements Exception {
 }
 
 final checkInRepositoryProvider = Provider<CheckInRepository>((ref) {
-  return CheckInRepositoryImpl();
+  final repo = CheckInRepositoryImpl();
+
+  ref.watch(tokenProvider).whenData((token) {
+    if (token != null) {
+      repo.setAuthToken(token);
+    }
+  });
+
+  return repo;
 });

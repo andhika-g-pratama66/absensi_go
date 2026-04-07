@@ -1,8 +1,11 @@
 class Endpoint {
   static const String baseUrl = "https://appabsensi.mobileprojp.com/api";
+  static const String publicImages =
+      "https://appabsensi.mobileprojp.com/public/";
   static const String register = "$baseUrl/register";
   static const String login = "$baseUrl/login";
   static const String profile = "$baseUrl/profile";
+
   static const String profilePhoto = "$baseUrl/profile/photo";
   static const String checkIn = "$baseUrl/absen/check-in";
   static const String checkOut = "$baseUrl/absen/check-out";
