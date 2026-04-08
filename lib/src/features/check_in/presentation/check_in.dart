@@ -188,7 +188,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
             backgroundColor: const Color(0xFF3B6D11),
           ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, ref);
       }
     });
 

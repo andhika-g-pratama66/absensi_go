@@ -99,10 +99,8 @@ class ActionButtons extends ConsumerWidget {
             timeColor: hasCheckedOut
                 ? const Color(0xFF1a1a2e)
                 : Colors.grey.shade400,
-            onTap: (hasCheckedOut || !hasCheckedIn)
-                ? null
-                : () => context.push(const CheckOutScreen()),
-            isDisabled: !hasCheckedIn || hasCheckedOut,
+            onTap: () => context.push(const CheckOutScreen()),
+            // isDisabled: !hasCheckedIn || hasCheckedOut,
           ),
         ),
       ],
