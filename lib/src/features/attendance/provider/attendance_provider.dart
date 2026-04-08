@@ -54,10 +54,9 @@ class AttendanceNotifier extends AsyncNotifier<AttendanceState> {
 
   Future<AttendanceState> _fetchData() async {
     final now = DateTime.now();
-    // Calculate Monday of this week correctly
-    // If today is Sunday (7), weekday is 7. Monday is now - (7-1) = now - 6.
-    // If today is Monday (1), weekday is 1. Monday is now - (1-1) = now.
-    final monday = now.subtract(Duration(days: now.weekday - 1));
+    // Ensure we start from midnight to avoid timestamp drift
+    final today = DateTime(now.year, now.month, now.day);
+    final monday = today.subtract(Duration(days: today.weekday - 1));
     final friday = monday.add(const Duration(days: 4));
 
     final startDate = DateFormat('yyyy-MM-dd').format(monday);
@@ -65,16 +64,23 @@ class AttendanceNotifier extends AsyncNotifier<AttendanceState> {
 
     try {
       final headers = await _getHeaders();
-
-      // 1. Fetch Stats from absenStat endpoint
-      final statsResponse = await http.get(
-        Uri.parse('${Endpoint.absenStat}?start=$startDate&end=$endDate'),
-        headers: headers,
+      final statsUri = Uri.parse(
+        '${Endpoint.absenStat}?start=$startDate&end=$endDate',
+      );
+      final historyUri = Uri.parse(
+        '${Endpoint.absenToday}?start=$startDate&end=$endDate',
       );
 
-      log('[AttendanceNotifier] Stats Status: ${statsResponse.statusCode}');
-      log('[AttendanceNotifier] Stats Body: ${statsResponse.body}');
+      // Run both requests in parallel
+      final results = await Future.wait([
+        http.get(statsUri, headers: headers),
+        http.get(historyUri, headers: headers),
+      ]);
 
+      final statsResponse = results[0];
+      final historyResponse = results[1];
+
+      // --- 1. Parse Stats ---
       StatsData? stats;
       if (statsResponse.statusCode == 200) {
         final decoded = json.decode(statsResponse.body);
@@ -83,42 +89,28 @@ class AttendanceNotifier extends AsyncNotifier<AttendanceState> {
         }
       }
 
-      // 2. Fetch History from absenToday endpoint (using range params as requested)
-      final historyResponse = await http.get(
-        Uri.parse('${Endpoint.absenToday}?start=$startDate&end=$endDate'),
-        headers: headers,
-      );
-
-      log('[AttendanceNotifier] History Status: ${historyResponse.statusCode}');
-      log('[AttendanceNotifier] History Body: ${historyResponse.body}');
-
+      // --- 2. Parse History ---
       List<CheckInModel> history = [];
       if (historyResponse.statusCode == 200) {
         final decoded = json.decode(historyResponse.body);
         final dynamic data = decoded['data'];
 
         if (data is List) {
-          log('[AttendanceNotifier] History data is List. Parsing...');
           history = data.map((item) => CheckInModel.fromJson(item)).toList();
         } else if (data is Map<String, dynamic>) {
-          log('[AttendanceNotifier] History data is Map. Checking for list or single record...');
-          if (data['history'] is List) {
-            history = (data['history'] as List)
-                .map((item) => CheckInModel.fromJson(item))
-                .toList();
-          } else if (data['details'] is List) {
-            history = (data['details'] as List)
-                .map((item) => CheckInModel.fromJson(item))
-                .toList();
-          } else if (data.containsKey('attendance_date')) {
-            history = [CheckInModel.fromJson(data)];
+          // Flattening the map structure based on common API patterns
+          final list =
+              data['history'] ??
+              data['details'] ??
+              (data.containsKey('attendance_date') ? [data] : []);
+          if (list is List) {
+            history = list.map((item) => CheckInModel.fromJson(item)).toList();
           }
         }
       }
 
       return AttendanceState(stats: stats, history: history, isLoading: false);
     } catch (e) {
-
       log('[AttendanceNotifier] Error: $e');
       return AttendanceState(
         errorMessage: 'Gagal memuat data absensi: $e',

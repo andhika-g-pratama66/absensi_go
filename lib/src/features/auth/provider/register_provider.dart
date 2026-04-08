@@ -1,9 +1,14 @@
+import 'dart:async';
+
+import 'package:absensi_go/src/data/models/register_model.dart';
+import 'package:absensi_go/src/data/repositories/auth_repository.dart';
+import 'package:absensi_go/src/data/repositories/local_storage.dart';
+
 import 'package:absensi_go/src/features/auth/provider/auth_provider.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:absensi_go/src/core/errors/api_execption.dart';
-import 'package:absensi_go/src/data/models/register_model.dart';
-import 'package:absensi_go/src/data/repositories/auth_repository.dart';
+
 import 'package:flutter_riverpod/legacy.dart';
 
 // Assuming you have your PreferenceHandler setup somewhere to inject
@@ -22,33 +27,34 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 });
 
 final registerProvider =
-    StateNotifierProvider.autoDispose<
-      RegisterNotifier,
-      AsyncValue<RegisterModel?>
-    >((ref) {
-      // Now this line will work perfectly!
-      final repository = ref.watch(authRepositoryProvider);
-      return RegisterNotifier(repository);
+    AsyncNotifierProvider.autoDispose<RegisterNotifier, RegisterModel?>(() {
+      return RegisterNotifier();
     });
 
-class RegisterNotifier extends StateNotifier<AsyncValue<RegisterModel?>> {
-  final AuthRepository repository;
-
-  RegisterNotifier(this.repository) : super(const AsyncValue.data(null));
+class RegisterNotifier extends AsyncNotifier<RegisterModel?> {
+  @override
+  FutureOr<RegisterModel?> build() {
+    // Initial state is null.
+    return null;
+  }
 
   Future<void> registerUser({
     required String name,
     required String email,
     required String password,
-    // Removed passwordConfirmation to match your repository
     required String jenisKelamin,
     required int batchId,
     required int trainingId,
   }) async {
-    state = const AsyncValue.loading();
+    state =
+        const AsyncLoading(); // Set loading state manually before the async gap
+
+    // Access providers directly using ref.read inside Notifiers
+    final repository = ref.read(authRepositoryProvider);
+    final storage = ref.read(localStorageProvider);
 
     try {
-      final RegisterModel result = await repository.register(
+      final result = await repository.register(
         name: name,
         email: email,
         password: password,
@@ -57,16 +63,15 @@ class RegisterNotifier extends StateNotifier<AsyncValue<RegisterModel?>> {
         trainingId: trainingId,
       );
 
-      state = AsyncValue.data(result);
-    } on ApiException catch (e, st) {
-      // Your repository throws ApiException nicely, so we catch it here
-      state = AsyncValue.error(e.message, st);
-    } catch (e, st) {
-      state = AsyncValue.error('An unexpected error occurred: $e', st);
-    }
-  }
+      if (result.data?.token != null) {
+        await storage.saveToken(result.data!.token!);
+      }
 
-  void reset() {
-    state = const AsyncValue.data(null);
+      state = AsyncData(result);
+    } on ApiException catch (e, st) {
+      state = AsyncError(e.message, st);
+    } catch (e, st) {
+      state = AsyncError('An unexpected error occurred: $e', st);
+    }
   }
 }

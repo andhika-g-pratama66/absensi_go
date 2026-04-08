@@ -3,7 +3,6 @@ import 'package:absensi_go/src/features/check_in/presentation/check_in.dart';
 import 'package:absensi_go/src/features/check_out/presentation/check_out.dart';
 import 'package:absensi_go/src/features/auth/presentation/login_view.dart';
 import 'package:absensi_go/src/features/auth/provider/auth_provider.dart';
-import 'package:absensi_go/src/features/izin/presentation/izin_form_screen.dart';
 import 'package:absensi_go/src/features/izin/presentation/izin_list_screen.dart';
 import 'package:absensi_go/src/features/splash/splashscreen.dart';
 import 'package:absensi_go/src/features/izin/presentation/izin_detail_screen.dart';
@@ -34,24 +33,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/main', builder: (context, state) => const Homescreen()),
-      GoRoute(path: '/checkin', builder: (context, state) => const CheckInScreen()),
-      GoRoute(path: '/checkout', builder: (context, state) => const CheckOutScreen()),
-      // Izin routes
-      GoRoute(path: '/izin', builder: (context, state) => const IzinListScreen()),
-      GoRoute(path: '/izin/create', builder: (context, state) => const IzinFormScreen()),
       GoRoute(
-        path: '/izin/:id',
-        builder: (context, state) => IzinDetailScreen(
-          izinId: int.parse(state.pathParameters['id'] ?? '0'),
-        ),
-        routes: [
-          GoRoute(
-            path: 'edit',
-            builder: (context, state) => IzinFormScreen(
-              izinId: int.parse(state.pathParameters['id'] ?? '0'),
-            ),
-          ),
-        ],
+        path: '/checkin',
+        builder: (context, state) => const CheckInScreen(),
+      ),
+      GoRoute(
+        path: '/checkout',
+        builder: (context, state) => const CheckOutScreen(),
+      ),
+      // Izin routes
+      GoRoute(
+        path: '/izin',
+        builder: (context, state) => const IzinListScreen(),
       ),
     ],
   );

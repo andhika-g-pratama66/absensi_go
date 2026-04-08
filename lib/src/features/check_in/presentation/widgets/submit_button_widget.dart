@@ -1,4 +1,4 @@
-import 'package:absensi_go/src/features/check_in/provider/check_in_provider.dart';
+import 'package:absensi_go/src/features/check_in/provider/submit_check_in_provider.dart';
 import 'package:flutter/material.dart';
 
 class SubmitButton extends StatelessWidget {

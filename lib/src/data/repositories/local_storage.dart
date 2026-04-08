@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:absensi_go/src/data/models/register_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:absensi_go/src/data/models/auth_model.dart';
 

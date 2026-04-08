@@ -1,6 +1,6 @@
 import 'package:absensi_go/src/data/models/check_out_model.dart';
 import 'package:absensi_go/src/data/repositories/check_out_repository.dart';
-import 'package:absensi_go/src/features/check_in/provider/check_in_provider.dart';
+import 'package:absensi_go/src/features/check_in/provider/submit_check_in_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
@@ -179,7 +179,7 @@ class CheckOutNotifier extends AsyncNotifier<CheckOutState> {
       );
 
       // Invalidate checkInProvider to refresh the home screen state
-      ref.invalidate(checkInProvider);
+      ref.invalidate(submitCheckInProvider);
 
       return true;
     } on CheckOutException catch (e) {

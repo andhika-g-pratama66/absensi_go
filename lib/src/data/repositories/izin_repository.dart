@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:absensi_go/src/features/izin/models/izin_model.dart';
@@ -102,7 +103,9 @@ class IzinRepositoryImpl implements IzinRepository {
   @override
   Future<IzinModel> createIzin(IzinModel izinModel) async {
     try {
-      final response = await _dio.post('/izin', data: izinModel.toJson());
+      final payload = izinModel.toJson();
+      log('>>> POST /izin payload: $payload'); // ←
+      final response = await _dio.post('/izin', data: payload);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return IzinModel.fromJson(response.data['data'] ?? response.data);

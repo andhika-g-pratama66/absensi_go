@@ -5,7 +5,7 @@ class Endpoint {
   static const String register = "$baseUrl/register";
   static const String login = "$baseUrl/login";
   static const String profile = "$baseUrl/profile";
-
+  static const String users = "$baseUrl/users";
   static const String profilePhoto = "$baseUrl/profile/photo";
   static const String checkIn = "$baseUrl/absen/check-in";
   static const String checkOut = "$baseUrl/absen/check-out";
@@ -14,7 +14,7 @@ class Endpoint {
   static const String absenToday = "$baseUrl/absen/today";
   static const String absenStat = "$baseUrl/absen/stats";
   static const String history = "$baseUrl/absen/history";
-  static const String users = "$baseUrl/absen/users";
+
   static const String forgotPassword = "$baseUrl/forgot-password";
   static const String resetPassword = "$baseUrl/reset-password";
 

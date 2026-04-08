@@ -52,30 +52,34 @@ class CheckInState {
 
 // ── Notifier ────────────────────────────────────────────
 
-class CheckInNotifier extends AsyncNotifier<CheckInState> {
+class SubmitCheckInNotifier extends AsyncNotifier<CheckInState> {
   CheckInRepository get _repository => ref.read(checkInRepositoryProvider);
 
   @override
   Future<CheckInState> build() async {
     // This runs when the provider is first accessed
-    final todayCheckIn = await _repository.getTodayCheckIn();
-    
+
     // Return initial state with fetched data
-    return CheckInState(todayCheckIn: todayCheckIn);
+    return CheckInState();
   }
 
   Future<void> getLocation() async {
     // FIX: Replaced valueOrNull with value
     final currentState = state.value ?? const CheckInState();
-    state = AsyncData(currentState.copyWith(isLoadingLocation: true, errorMessage: null));
+    state = AsyncData(
+      currentState.copyWith(isLoadingLocation: true, errorMessage: null),
+    );
 
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        state = AsyncData(state.value!.copyWith(
-          isLoadingLocation: false,
-          errorMessage: 'Layanan lokasi tidak aktif. Aktifkan GPS terlebih dahulu.',
-        ));
+        state = AsyncData(
+          state.value!.copyWith(
+            isLoadingLocation: false,
+            errorMessage:
+                'Layanan lokasi tidak aktif. Aktifkan GPS terlebih dahulu.',
+          ),
+        );
         return;
       }
 
@@ -83,24 +87,31 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          state = AsyncData(state.value!.copyWith(
-            isLoadingLocation: false,
-            errorMessage: 'Izin lokasi ditolak.',
-          ));
+          state = AsyncData(
+            state.value!.copyWith(
+              isLoadingLocation: false,
+              errorMessage: 'Izin lokasi ditolak.',
+            ),
+          );
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        state = AsyncData(state.value!.copyWith(
-          isLoadingLocation: false,
-          errorMessage: 'Izin lokasi ditolak permanen. Buka pengaturan untuk mengaktifkan.',
-        ));
+        state = AsyncData(
+          state.value!.copyWith(
+            isLoadingLocation: false,
+            errorMessage:
+                'Izin lokasi ditolak permanen. Buka pengaturan untuk mengaktifkan.',
+          ),
+        );
         return;
       }
 
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
 
       final placemarks = await placemarkFromCoordinates(
@@ -120,17 +131,21 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
         ].where((e) => e != null && e.isNotEmpty).join(', ');
       }
 
-      state = AsyncData(state.value!.copyWith(
-        isLoadingLocation: false,
-        latitude: position.latitude,
-        longitude: position.longitude,
-        address: address,
-      ));
+      state = AsyncData(
+        state.value!.copyWith(
+          isLoadingLocation: false,
+          latitude: position.latitude,
+          longitude: position.longitude,
+          address: address,
+        ),
+      );
     } catch (e) {
-      state = AsyncData(state.value!.copyWith(
-        isLoadingLocation: false,
-        errorMessage: 'Gagal mendapatkan lokasi: $e',
-      ));
+      state = AsyncData(
+        state.value!.copyWith(
+          isLoadingLocation: false,
+          errorMessage: 'Gagal mendapatkan lokasi: $e',
+        ),
+      );
     }
   }
 
@@ -139,7 +154,9 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
     final currentState = state.value;
     if (currentState == null || !currentState.hasLocation) return false;
 
-    state = AsyncData(currentState.copyWith(isSubmitting: true, errorMessage: null));
+    state = AsyncData(
+      currentState.copyWith(isSubmitting: true, errorMessage: null),
+    );
 
     try {
       final now = DateTime.now();
@@ -158,23 +175,26 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
 
       final savedCheckIn = await _repository.submitCheckIn(model);
 
-      state = AsyncData(state.value!.copyWith(
-        isSubmitting: false,
-        todayCheckIn: savedCheckIn,
-      ));
+      state = AsyncData(
+        state.value!.copyWith(isSubmitting: false, todayCheckIn: savedCheckIn),
+      );
 
       // Invalidate checkOutProvider to ensure it knows check-in happened
       ref.invalidate(checkOutProvider);
 
       return true;
     } on CheckInException catch (e) {
-      state = AsyncData(state.value!.copyWith(isSubmitting: false, errorMessage: e.message));
+      state = AsyncData(
+        state.value!.copyWith(isSubmitting: false, errorMessage: e.message),
+      );
       return false;
     } catch (e) {
-      state = AsyncData(state.value!.copyWith(
-        isSubmitting: false,
-        errorMessage: 'Gagal check in: $e',
-      ));
+      state = AsyncData(
+        state.value!.copyWith(
+          isSubmitting: false,
+          errorMessage: 'Gagal check in: $e',
+        ),
+      );
       return false;
     }
   }
@@ -182,6 +202,7 @@ class CheckInNotifier extends AsyncNotifier<CheckInState> {
 
 // ── Provider ──────────────────────────────────────────
 
-final checkInProvider = AsyncNotifierProvider<CheckInNotifier, CheckInState>(() {
-  return CheckInNotifier();
-});
+final submitCheckInProvider =
+    AsyncNotifierProvider<SubmitCheckInNotifier, CheckInState>(() {
+      return SubmitCheckInNotifier();
+    });

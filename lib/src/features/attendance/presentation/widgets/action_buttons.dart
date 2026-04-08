@@ -1,6 +1,8 @@
 import 'package:absensi_go/src/core/utils/navigator.dart';
 import 'package:absensi_go/src/features/check_in/presentation/check_in.dart';
-import 'package:absensi_go/src/features/check_in/provider/check_in_provider.dart';
+import 'package:absensi_go/src/features/check_in/provider/get_today_check_in_provider.dart';
+
+import 'package:absensi_go/src/features/check_in/provider/submit_check_in_provider.dart';
 import 'package:absensi_go/src/features/check_out/presentation/check_out.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,116 +10,99 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class ActionButtons extends ConsumerWidget {
   const ActionButtons({super.key});
 
+  // Helper to parse time and check if late/early
+  bool _isAfterTime(String? timeStr, int hourLimit, int minuteLimit) {
+    if (timeStr == null || timeStr.isEmpty || timeStr == '--:--') return false;
+    try {
+      // Handles formats like "08:30" or "08:30:00"
+      final parts = timeStr.split(':');
+      if (parts.length < 2) return false;
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+
+      if (hour > hourLimit) return true;
+      if (hour == hourLimit && minute > minuteLimit) return true;
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Check In State (Now contains both check-in and check-out data from new API)
-    final asyncCheckInState = ref.watch(checkInProvider);
-    final checkInState = asyncCheckInState.value;
-    final todayData = checkInState?.todayCheckIn;
-    
-    final hasCheckedIn = todayData?.checkInTime != null || todayData?.checkIn != null;
-    final hasCheckedOut = todayData?.checkOutTime != null;
+    final asyncCheckInState = ref.watch(getTodayCheckInProvider);
+    final todayData = asyncCheckInState.value;
 
-    // --- Check In UI Logic ---
-    final checkInTimeValue = todayData?.checkInTime ?? todayData?.checkIn;
-    final checkInTime = hasCheckedIn ? checkInTimeValue ?? '--:--' : '--:--';
+    // --- State Check ---
+    final checkInTimeStr = todayData?.checkInTime ?? todayData?.checkIn;
+    final checkOutTimeStr = todayData?.checkOutTime;
 
-    // Determine if late (after 08:00)
-    bool isLate = false;
-    if (hasCheckedIn && checkInTimeValue != null) {
-      try {
-        final parts = checkInTimeValue.split(':');
-        if (parts.length >= 2) {
-          final hour = int.parse(parts[0]);
-          final minute = int.parse(parts[1]);
-          isLate = hour > 8 || (hour == 8 && minute > 0);
-        }
-      } catch (e) {
-        isLate = false;
-      }
-    }
+    final bool hasCheckedIn =
+        checkInTimeStr != null && checkInTimeStr.isNotEmpty;
+    final bool hasCheckedOut =
+        checkOutTimeStr != null && checkOutTimeStr.isNotEmpty;
 
-    final checkInStatusLabel = !hasCheckedIn
-        ? 'Belum'
-        : (isLate ? 'Terlambat' : 'Tepat Waktu');
-    final checkInStatusBg = !hasCheckedIn
-        ? Colors.grey.shade100
-        : (isLate ? const Color(0xFFFAECE7) : const Color(0xFFEAF3DE));
-    final checkInStatusTextColor = !hasCheckedIn
-        ? Colors.grey.shade500
-        : (isLate ? const Color(0xFF993C1D) : const Color(0xFF3B6D11));
-    final checkInTimeColor = hasCheckedIn
-        ? const Color(0xFF1a1a2e)
-        : Colors.grey.shade400;
+    // --- Status Logic ---
+    // Late if check in is AFTER 08:00
+    final isLate = hasCheckedIn && _isAfterTime(checkInTimeStr, 8, 0);
 
-    // --- Check Out UI Logic ---
-    final checkOutTimeValue = todayData?.checkOutTime;
-    final checkOutTime = hasCheckedOut ? checkOutTimeValue ?? '--:--' : '--:--';
-
-    // Determine if early (before 17:00)
-    bool isEarly = false;
-    if (hasCheckedOut && checkOutTimeValue != null) {
-      try {
-        final parts = checkOutTimeValue.split(':');
-        if (parts.length >= 2) {
-          final hour = int.parse(parts[0]);
-          final minute = int.parse(parts[1]);
-          isEarly = hour < 17;
-        }
-      } catch (e) {
-        isEarly = false;
-      }
-    }
-
-    final checkOutStatusLabel = !hasCheckedOut
-        ? 'Belum'
-        : (isEarly ? 'Pulang Awal' : 'Sesuai Jadwal');
-    final checkOutStatusBg = !hasCheckedOut
-        ? Colors.grey.shade100
-        : (isEarly ? const Color(0xFFFAECE7) : const Color(0xFFEAF3DE));
-    final checkOutStatusTextColor = !hasCheckedOut
-        ? Colors.grey.shade500
-        : (isEarly ? const Color(0xFF993C1D) : const Color(0xFF3B6D11));
-    final checkOutTimeColor = hasCheckedOut
-        ? const Color(0xFF1a1a2e)
-        : Colors.grey.shade400;
+    // Early if check out is BEFORE 17:00 (i.e., NOT after 16:59)
+    final isEarly = hasCheckedOut && !_isAfterTime(checkOutTimeStr, 16, 59);
 
     return Row(
       children: [
+        // --- CHECK IN CARD ---
         Expanded(
           child: _attendanceCard(
             context: context,
             icon: Icons.login_rounded,
             label: 'Masuk',
-            time: checkInTime,
+            time: hasCheckedIn ? checkInTimeStr : '--:--',
             iconBg: const Color(0xFFEAF3DE),
             iconColor: const Color(0xFF3B6D11),
-            statusLabel: checkInStatusLabel,
-            statusBg: checkInStatusBg,
-            statusTextColor: checkInStatusTextColor,
-            timeColor: checkInTimeColor,
+            statusLabel: !hasCheckedIn
+                ? 'Belum'
+                : (isLate ? 'Terlambat' : 'Tepat Waktu'),
+            statusBg: !hasCheckedIn
+                ? Colors.grey.shade100
+                : (isLate ? const Color(0xFFFAECE7) : const Color(0xFFEAF3DE)),
+            statusTextColor: !hasCheckedIn
+                ? Colors.grey.shade500
+                : (isLate ? const Color(0xFF993C1D) : const Color(0xFF3B6D11)),
+            timeColor: hasCheckedIn
+                ? const Color(0xFF1a1a2e)
+                : Colors.grey.shade400,
             onTap: hasCheckedIn
                 ? null
                 : () => context.push(const CheckInScreen()),
           ),
         ),
         const SizedBox(width: 10),
+        // --- CHECK OUT CARD ---
         Expanded(
           child: _attendanceCard(
             context: context,
             icon: Icons.logout_rounded,
             label: 'Pulang',
-            time: checkOutTime,
+            time: hasCheckedOut ? checkOutTimeStr : '--:--',
             iconBg: const Color(0xFFFAEEDA),
             iconColor: const Color(0xFF854F0B),
-            statusLabel: checkOutStatusLabel,
-            statusBg: checkOutStatusBg,
-            statusTextColor: checkOutStatusTextColor,
-            timeColor: checkOutTimeColor,
-            onTap: hasCheckedOut || !hasCheckedIn
+            statusLabel: !hasCheckedOut
+                ? 'Belum'
+                : (isEarly ? 'Pulang Awal' : 'Sesuai Jadwal'),
+            statusBg: !hasCheckedOut
+                ? Colors.grey.shade100
+                : (isEarly ? const Color(0xFFFAECE7) : const Color(0xFFEAF3DE)),
+            statusTextColor: !hasCheckedOut
+                ? Colors.grey.shade500
+                : (isEarly ? const Color(0xFF993C1D) : const Color(0xFF3B6D11)),
+            timeColor: hasCheckedOut
+                ? const Color(0xFF1a1a2e)
+                : Colors.grey.shade400,
+            onTap: (hasCheckedOut || !hasCheckedIn)
                 ? null
                 : () => context.push(const CheckOutScreen()),
-            isDisabled: !hasCheckedIn,
+            isDisabled: !hasCheckedIn || hasCheckedOut,
           ),
         ),
       ],
@@ -132,16 +117,12 @@ class ActionButtons extends ConsumerWidget {
     required Color iconBg,
     required Color iconColor,
     required String statusLabel,
-    Color? statusBg,
-    Color? statusTextColor,
-    Color? timeColor,
+    required Color statusBg,
+    required Color statusTextColor,
+    required Color timeColor,
     required VoidCallback? onTap,
     bool isDisabled = false,
   }) {
-    final sBg = statusBg ?? const Color(0xFFEAF3DE);
-    final sTxt = statusTextColor ?? const Color(0xFF3B6D11);
-    final tColor = timeColor ?? const Color(0xFF1a1a2e);
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -150,9 +131,17 @@ class ActionButtons extends ConsumerWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: const Color.fromRGBO(0, 0, 0, 0.06)),
+          boxShadow: [
+            if (!isDisabled && onTap != null)
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+          ],
         ),
         child: Opacity(
-          opacity: isDisabled ? 0.5 : 1.0,
+          opacity: isDisabled ? 0.6 : 1.0,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -174,32 +163,32 @@ class ActionButtons extends ConsumerWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: sBg,
+                      color: statusBg,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       statusLabel,
                       style: TextStyle(
                         fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: sTxt,
+                        fontWeight: FontWeight.bold,
+                        color: statusTextColor,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Text(
                 label,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 2),
               Text(
                 time,
                 style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                  color: tColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: timeColor,
                 ),
               ),
             ],

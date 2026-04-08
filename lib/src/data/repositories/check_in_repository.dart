@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:absensi_go/src/features/auth/provider/auth_provider.dart';
 import 'package:absensi_go/src/features/check_in/models/check_in_model.dart';
 import 'package:absensi_go/src/data/repositories/endpoint.dart';
@@ -32,10 +34,18 @@ class CheckInRepositoryImpl implements CheckInRepository {
   @override
   Future<CheckInModel> submitCheckIn(CheckInModel checkInModel) async {
     try {
+      // ADD THESE LOGS
+      log('🔗 Full URL: ${_dio.options.baseUrl}/absen/check-in');
+      log('🔑 Auth Header: ${_dio.options.headers['Authorization']}');
+      log('📦 Request Body: ${checkInModel.toJson()}');
+
       final response = await _dio.post(
         '/absen/check-in',
         data: checkInModel.toJson(),
       );
+
+      log('✅ Response Status: ${response.statusCode}');
+      log('📥 Response Body: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return CheckInModel.fromJson(response.data['data'] ?? response.data);
@@ -128,8 +138,7 @@ class CheckInRepositoryImpl implements CheckInRepository {
   }
 }
 
-// ── Exception ────────────────────────────────────────────
-
+// ── Exception ───────────────
 class CheckInException implements Exception {
   final String message;
   final int? statusCode;

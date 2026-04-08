@@ -4,6 +4,7 @@ import 'package:absensi_go/src/data/models/auth_model.dart';
 import 'package:absensi_go/src/data/repositories/local_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:absensi_go/src/features/profile/repositories/profile_repository.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import '../../../data/repositories/auth_repository.dart';
 
 final localStorageProvider = Provider<LocalStorageService>((ref) {
@@ -38,7 +39,13 @@ final isLoggedInProvider = Provider<bool>((ref) {
     orElse: () => false,
   );
 });
+// Create this in a global auth_provider.dart file
+final authTokenProvider = StateProvider<String?>((ref) => null);
 
+// You can also create a provider to check if the user is authenticated
+final isAuthenticatedProvider = Provider<bool>((ref) {
+  return ref.watch(authTokenProvider) != null;
+});
 final tokenProvider = FutureProvider<String?>((ref) async {
   return await ref.read(localStorageProvider).getToken();
 });
@@ -67,36 +74,39 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
   Future<UserModel?> build() async {
     log('[AuthNotifier] App restarted! Checking local storage...');
 
-    // ✅ Skip expiry check on startup - server will validate token on first API call
     final token = await _repository.storage.getToken(checkExpiry: false);
     log('[AuthNotifier] Token found: $token');
 
     if (token == null || token.isEmpty) {
-      log(
-        '[AuthNotifier] Token is null or empty. Returning null (logging out).',
-      );
       return null;
     }
 
     try {
-      final user = await _repository.storage.getUser();
-      log(
-        '[AuthNotifier] User fetched from storage: ${user?.data?.user?.name}',
+      // ✅ Fetch user dari API menggunakan token yang ada
+      final repo = ref.read(profileRepositoryProvider);
+      final user = await repo.getUser();
+      log('[AuthNotifier] User fetched from API: ${user?.name}');
+
+      if (user == null) return null;
+
+      // ✅ Wrap User ke dalam UserModel agar type konsisten
+      return UserModel(
+        message: 'success',
+        data: Data(token: token, user: user),
       );
-      return user;
     } catch (e) {
-      log('[AuthNotifier] ERROR reading user from storage: $e');
+      log('[AuthNotifier] ERROR fetching user from API: $e');
       return null;
     }
   }
 
   Future<void> login(String email, String password) async {
-    state = const AsyncLoading(); // Set loading while fetching
+    state = const AsyncLoading();
 
-    // AsyncValue.guard automatically catches errors and sets AsyncError,
-    // or sets AsyncData if successful. It's much cleaner than try/catch!
     state = await AsyncValue.guard(() async {
-      return await _repository.login(email, password);
+      // ✅ Repository sudah handle saveToken di dalamnya
+      final result = await _repository.login(email, password);
+      return result; // langsung return UserModel
     });
   }
 

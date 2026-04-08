@@ -87,20 +87,14 @@ class IzinModel {
         : DateTime.parse(json["updated_at"]),
   );
 
+  /// Hanya kirim field yang dibutuhkan saat create izin
   Map<String, dynamic> toJson() => {
-    "id": id,
-    "attendance_date": attendanceDate == null
+    "date": attendanceDate == null
         ? null
-        : "${attendanceDate!.year.toString().padLeft(4, '0')}-${attendanceDate!.month.toString().padLeft(2, '0')}-${attendanceDate!.day.toString().padLeft(2, '0')}",
-    "check_in_time": checkInTime,
-    "check_in_lat": checkInLat,
-    "check_in_lng": checkInLng,
-    "check_in_location": checkInLocation,
-    "check_in_address": checkInAddress,
-    "status": status,
+        : "${attendanceDate!.year.toString().padLeft(4, '0')}-"
+              "${attendanceDate!.month.toString().padLeft(2, '0')}-"
+              "${attendanceDate!.day.toString().padLeft(2, '0')}",
     "alasan_izin": alasanIzin,
-    "created_at": createdAt?.toIso8601String(),
-    "updated_at": updatedAt?.toIso8601String(),
   };
 
   bool get isIzin => status == 'izin';

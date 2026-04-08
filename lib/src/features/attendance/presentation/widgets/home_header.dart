@@ -6,12 +6,32 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-class HomeHeader extends StatelessWidget {
+class HomeHeader extends StatefulWidget {
   final AsyncValue authState;
   const HomeHeader({super.key, required this.authState});
 
   @override
+  State<HomeHeader> createState() => _HomeHeaderState();
+}
+
+class _HomeHeaderState extends State<HomeHeader> {
+  final String greeting = () {
+    var hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Selamat pagi';
+    } else if (hour < 15) {
+      return 'Selamat siang';
+    } else if (hour < 18) {
+      return 'Selamat sore';
+    } else {
+      return 'Selamat malam';
+    }
+  }();
+  @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    // Cek apakah jam sekarang di antara pukul 08:00 dan 16:00
+    bool isOfficeHours = now.hour >= 8 && now.hour < 16;
     return Container(
       width: double.infinity,
       color: AppColors.darkBg,
@@ -29,15 +49,15 @@ class HomeHeader extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Selamat pagi',
+                      Text(
+                        greeting,
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.white38,
                           letterSpacing: 0.5,
                         ),
                       ),
-                      authState.when(
+                      widget.authState.when(
                         data: (user) => Text(
                           user?.data?.user?.name ?? 'User',
                           style: const TextStyle(
@@ -83,7 +103,7 @@ class HomeHeader extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
-    return authState.when(
+    return widget.authState.when(
       data: (user) {
         final name = user?.data?.user?.name ?? '';
         final rawProfilePhoto = user?.data?.user?.profilePhoto;
@@ -198,10 +218,12 @@ class HomeHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            // Pro-tip: Pass 'id_ID' as the second parameter here if you want Indonesian days
             DateFormat(
-              'EEEE, d MMMM yyyy',
-            ).format(DateTime.now()).toUpperCase(),
+                  'EEEE, d MMMM yyyy',
+                  'id_ID',
+                ) // Menggunakan locale Indonesia
+                .format(DateTime.now())
+                .toUpperCase(),
             style: const TextStyle(
               fontSize: 11,
               color: Colors.white38,
@@ -209,28 +231,50 @@ class HomeHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          // FIXED: Extracted to a constant stateful widget
-          const _LiveClock(),
+          const _LiveClock(), // Jam yang berdetik tiap detik
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.accent,
-                ),
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                'Dalam jam kerja',
-                style: TextStyle(fontSize: 12, color: Colors.white54),
-              ),
-            ],
-          ),
+          const _StatusJamKerja(), // Indikator status yang ikut berdetik
         ],
       ),
+    );
+  }
+}
+
+// Widget baru agar status "Dalam jam kerja" terupdate tiap detik
+class _StatusJamKerja extends StatelessWidget {
+  const _StatusJamKerja();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DateTime>(
+      // Kita gunakan stream yang sama dengan clock agar sinkron
+      stream: Stream.periodic(
+        const Duration(seconds: 1),
+        (_) => DateTime.now(),
+      ),
+      builder: (context, snapshot) {
+        final now = snapshot.data ?? DateTime.now();
+        // Logika: Jam 08:00 sampai 15:59:59 dihitung dalam jam kerja
+        final bool isOfficeHours = now.hour >= 8 && now.hour < 16;
+
+        return Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isOfficeHours ? AppColors.accent : Colors.grey,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              isOfficeHours ? 'Dalam jam kerja' : 'Luar jam kerja',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        );
+      },
     );
   }
 }

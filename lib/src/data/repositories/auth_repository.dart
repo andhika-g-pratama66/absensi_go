@@ -4,11 +4,12 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:absensi_go/src/core/errors/api_execption.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:absensi_go/src/data/models/auth_model.dart';
 import 'package:absensi_go/src/data/models/register_model.dart';
 import 'package:absensi_go/src/data/repositories/endpoint.dart';
 import 'package:absensi_go/src/data/repositories/local_storage.dart';
+import 'package:absensi_go/src/features/auth/provider/auth_provider.dart';
 import 'package:http/http.dart' as http;
 
 class AuthRepository {
@@ -50,7 +51,6 @@ class AuthRepository {
             // Ini akan mengatur unlimited_session = true
             await storage.saveToken(token);
             await storage.setUnlimitedSession();
-            await storage.saveUser(user);
           }
 
           return user;
@@ -136,6 +136,13 @@ class AuthRepository {
       switch (response.statusCode) {
         case 200:
         case 201:
+          final token = decoded['data']?['token'] ?? decoded['token'];
+          if (token != null) {
+            // ✅ UNLIMITED SESSION: Simpan token tanpa expiry
+            // Ini akan mengatur unlimited_session = true
+            await storage.saveToken(token);
+            await storage.setUnlimitedSession();
+          }
           return RegisterModel.fromJson(decoded);
 
         case 422:
@@ -179,9 +186,7 @@ class AuthRepository {
     try {
       final token = await storage.getToken(); // FIX: use injected instance
 
-      if (token != null) {
-        // FIX #3: Invalidate session on the server
-      }
+      if (token != null) {}
     } on SocketException {
       log('[Logout] No internet, clearing local session anyway.');
     } on TimeoutException {

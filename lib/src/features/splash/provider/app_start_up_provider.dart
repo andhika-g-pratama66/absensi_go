@@ -1,8 +1,10 @@
 import 'dart:developer';
 
+import 'package:absensi_go/src/features/attendance/provider/attendance_provider.dart';
 import 'package:absensi_go/src/features/auth/provider/auth_provider.dart';
 import 'package:absensi_go/src/features/batch/provider/batch_provider.dart';
-import 'package:absensi_go/src/features/check_in/provider/check_in_provider.dart';
+import 'package:absensi_go/src/features/check_in/provider/get_today_check_in_provider.dart';
+import 'package:absensi_go/src/features/check_in/provider/submit_check_in_provider.dart';
 import 'package:absensi_go/src/features/check_out/provider/check_out_provider.dart';
 import 'package:absensi_go/src/features/izin/provider/izin_provider.dart';
 import 'package:absensi_go/src/features/training/provider/training_provider.dart';
@@ -23,11 +25,20 @@ final appStartProvider = FutureProvider<void>((ref) async {
   if (user != null) {
     log('[AppStartup] User logged in. Pre-loading data...');
     initializers.addAll([
-      _safeInit(() => ref.read(authProvider.notifier).refreshUser(), 'UserRefresh'),
-      // For AsyncNotifier, we just await the .future to trigger build()
-      _safeInit(() => ref.read(checkInProvider.future), 'TodayCheckIn'),
+      _safeInit(
+        () => ref.read(authProvider.notifier).refreshUser(),
+        'UserRefresh',
+      ),
+      _safeInit(
+        () => ref.read(attendanceProvider.notifier).refresh(),
+        'AttendanceData',
+      ),
+      _safeInit(() => ref.read(getTodayCheckInProvider.future), 'TodayCheckIn'),
       _safeInit(() => ref.read(checkOutProvider.future), 'TodayCheckOut'),
-      _safeInit(() => ref.read(izinProvider.notifier).loadIzinList(), 'IzinList'),
+      _safeInit(
+        () => ref.read(izinProvider.notifier).loadIzinList(),
+        'IzinList',
+      ),
     ]);
   }
 

@@ -143,7 +143,11 @@ class IzinNotifier extends StateNotifier<IzinState> {
 
   // Cancel izin
   Future<void> cancelIzin(int id, String reason) async {
-    state = state.copyWith(isSubmitting: true, errorMessage: null);
+    state = state.copyWith(
+      isSubmitting: true,
+      errorMessage: null,
+      successMessage: null,
+    );
 
     try {
       await _repository.cancelIzin(id, reason);

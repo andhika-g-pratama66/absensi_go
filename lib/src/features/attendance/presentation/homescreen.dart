@@ -7,6 +7,7 @@ import 'package:absensi_go/src/features/auth/presentation/login_view.dart';
 import 'package:absensi_go/src/features/auth/provider/auth_provider.dart';
 
 import 'package:absensi_go/src/core/utils/navigator.dart';
+import 'package:absensi_go/src/features/splash/splashscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -26,11 +27,16 @@ class _HomescreenState extends ConsumerState<Homescreen> {
     _checkAuth();
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   Future<void> _checkAuth() async {
     final token = await ref.read(localStorageProvider).getToken();
     if (!mounted) return;
     if (token == null || token.isEmpty) {
-      context.pushReplacement(const LoginScreen());
+      context.pushReplacement(const SplashPage());
     }
   }
 
@@ -61,7 +67,9 @@ class _BottomNavBar extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.black.withValues(alpha: 0.06))),
+        border: Border(
+          top: BorderSide(color: Colors.black.withValues(alpha: 0.06)),
+        ),
       ),
       child: SafeArea(
         child: Padding(
