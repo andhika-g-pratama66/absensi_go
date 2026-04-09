@@ -79,20 +79,6 @@ class _HomeHeaderState extends State<HomeHeader> {
                   ),
                 ],
               ),
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: Colors.white10,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white12),
-                ),
-                child: const Icon(
-                  Icons.notifications_rounded,
-                  color: Colors.white60,
-                  size: 18,
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 20),

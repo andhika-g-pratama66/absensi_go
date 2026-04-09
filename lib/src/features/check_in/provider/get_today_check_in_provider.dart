@@ -2,15 +2,13 @@ import 'package:absensi_go/src/data/repositories/check_in_repository.dart';
 import 'package:absensi_go/src/features/check_in/models/check_in_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class GetTodayCheckInProvider extends AsyncNotifier<CheckInModel> {
+class GetTodayCheckInProvider extends AsyncNotifier<CheckInModel?> {
   CheckInRepository get _repository => ref.read(checkInRepositoryProvider);
 
   @override
-  Future<CheckInModel> build() async {
-    // This runs when the provider is first accessed
-
-    // Return initial state with fetched data
-    return CheckInModel();
+  Future<CheckInModel?> build() async {
+    // Fetch real data on first access / when invalidated
+    return await _repository.getTodayCheckIn();
   }
 
   bool _isLoading = false;
@@ -52,6 +50,6 @@ class GetTodayCheckInProvider extends AsyncNotifier<CheckInModel> {
 }
 
 final getTodayCheckInProvider =
-    AsyncNotifierProvider<GetTodayCheckInProvider, CheckInModel>(() {
+    AsyncNotifierProvider<GetTodayCheckInProvider, CheckInModel?>(() {
       return GetTodayCheckInProvider();
     });
