@@ -1,6 +1,6 @@
 import 'dart:developer';
 import 'package:absensi_go/src/data/models/training_model.dart';
-import 'package:absensi_go/src/data/repositories/training_repository.dart';
+import 'package:absensi_go/src/features/training/repository/training_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 

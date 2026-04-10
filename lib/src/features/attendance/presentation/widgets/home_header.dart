@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:absensi_go/src/core/constants/app_colors.dart';
 import 'package:absensi_go/src/data/repositories/endpoint.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -32,58 +33,66 @@ class _HomeHeaderState extends State<HomeHeader> {
     final now = DateTime.now();
     // Cek apakah jam sekarang di antara pukul 08:00 dan 16:00
     bool isOfficeHours = now.hour >= 8 && now.hour < 16;
-    return Container(
-      width: double.infinity,
-      color: AppColors.darkBg,
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  _buildAvatar(),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        greeting,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.white38,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      widget.authState.when(
-                        data: (user) => Text(
-                          user?.data?.user?.name ?? 'User',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
+    return FadeInDown(
+      child: Container(
+        width: double.infinity,
+        color: AppColors.darkBg,
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    _buildAvatar(),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          greeting,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.white38,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                        loading: () => const Text(
-                          'Memuat...',
-                          style: TextStyle(color: Colors.white54, fontSize: 14),
+                        widget.authState.when(
+                          data: (user) => Text(
+                            user?.data?.user?.name ?? 'User',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                          loading: () => const Text(
+                            'Memuat...',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 14,
+                            ),
+                          ),
+                          error: (error, stackTrace) => const Text(
+                            'Error',
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 14,
+                            ),
+                          ),
                         ),
-                        error: (error, stackTrace) => const Text(
-                          'Error',
-                          style: TextStyle(color: Colors.white54, fontSize: 14),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _buildTimeCard(),
-        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _buildTimeCard(),
+          ],
+        ),
       ),
     );
   }
@@ -250,7 +259,7 @@ class _StatusJamKerja extends StatelessWidget {
               height: 6,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isOfficeHours ? AppColors.accent : Colors.grey,
+                color: isOfficeHours ? AppColors.labelText : Colors.grey,
               ),
             ),
             const SizedBox(width: 6),

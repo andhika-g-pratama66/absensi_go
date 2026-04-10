@@ -181,6 +181,74 @@ class AuthRepository {
     }
   }
 
+  /// Kirim OTP ke email untuk reset password
+  Future<void> sendResetPasswordOtp({required String email}) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse(Endpoint.forgotPassword),
+            headers: _jsonHeaders,
+            body: jsonEncode({'email': email}),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      log('[SendResetOtp] Status: ${response.statusCode}');
+      final decoded = json.decode(response.body);
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw ApiException(
+          decoded['message'] ?? 'Gagal mengirim OTP',
+          statusCode: response.statusCode,
+        );
+      }
+    } on SocketException {
+      throw const ApiException('Tidak ada koneksi internet.');
+    } on TimeoutException {
+      throw const ApiException('Koneksi timeout, coba lagi.');
+    } catch (e) {
+      log('[SendResetOtp] Error: $e');
+      rethrow;
+    }
+  }
+
+  /// Reset / simpan password baru
+  Future<void> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse(Endpoint.resetPassword),
+            headers: _jsonHeaders,
+            body: jsonEncode({
+              'email': email,
+              'otp': otp,
+              'password': newPassword,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      log('[ResetPassword] Status: ${response.statusCode}');
+      final decoded = json.decode(response.body);
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw ApiException(
+          decoded['message'] ?? 'Gagal memperbarui password',
+          statusCode: response.statusCode,
+        );
+      }
+    } on SocketException {
+      throw const ApiException('Tidak ada koneksi internet.');
+    } on TimeoutException {
+      throw const ApiException('Koneksi timeout, coba lagi.');
+    } catch (e) {
+      log('[ResetPassword] Error: $e');
+      rethrow;
+    }
+  }
+
   /// FIX #3 & #6: Call the logout API endpoint + use instance storage, not static
   Future<void> logout() async {
     try {
@@ -196,7 +264,9 @@ class AuthRepository {
     } finally {
       // Always clear local token regardless of server response
       await storage.deleteToken();
-      await storage.deleteUser(); // FIX #6: use instance method, not static
+      await storage.deleteUser();
+      await storage.clearAll();
+      // FIX #6: use instance method, not static
     }
   }
 }

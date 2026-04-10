@@ -1,4 +1,4 @@
-import 'package:absensi_go/src/data/repositories/izin_repository.dart';
+import 'package:absensi_go/src/features/izin/repository/izin_repository.dart';
 import 'package:absensi_go/src/features/auth/provider/auth_provider.dart';
 import 'package:absensi_go/src/features/izin/models/izin_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

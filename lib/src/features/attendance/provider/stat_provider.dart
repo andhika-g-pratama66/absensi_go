@@ -17,7 +17,7 @@ class AttendanceStatsNotifier extends AsyncNotifier<StatsData?> {
   }
 
   Future<Map<String, String>> _getHeaders() async {
-    final token = await ref.read(tokenProvider.future);
+    final token = await ref.watch(tokenProvider.future);
     return {
       'Accept': 'application/json',
       'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 import 'package:absensi_go/src/features/attendance/provider/attendance_provider.dart';
 import 'package:absensi_go/src/features/attendance/provider/history_provider.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -26,68 +27,73 @@ class HistorySection extends ConsumerWidget {
         }
 
         // We use a Column to keep the title above the list
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min, // Constrain height
-          children: [
-            const Text(
-              'Riwayat minggu ini',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF1A1A2E),
+        return FadeInUp(
+          duration: const Duration(milliseconds: 600),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min, // Constrain height
+            children: [
+              const Text(
+                'Riwayat minggu ini',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF1A1A2E),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            ListView.builder(
-              shrinkWrap: true, // Allows ListView to live inside a Column
-              physics:
-                  const NeverScrollableScrollPhysics(), // Parent scroll handles it
-              itemCount: state.data!.length,
-              itemBuilder: (context, index) {
-                final h = state.data![index];
+              const SizedBox(height: 12),
+              ListView.builder(
+                shrinkWrap: true, // Allows ListView to live inside a Column
+                physics:
+                    const NeverScrollableScrollPhysics(), // Parent scroll handles it
+                itemCount: state.data!.length,
+                itemBuilder: (context, index) {
+                  final h = state.data![index];
 
-                // --- Logic Processing ---
-                final date = h.attendanceDate ?? DateTime.now();
-                final dayLabel = DateFormat('EEE').format(date).toUpperCase();
-                final formattedDate = DateFormat('d MMMM yyyy').format(date);
+                  // --- Logic Processing ---
+                  final date = h.attendanceDate ?? DateTime.now();
+                  final dayLabel = DateFormat('EEE').format(date).toUpperCase();
+                  final formattedDate = DateFormat('d MMMM yyyy').format(date);
 
-                final checkIn = h.checkInTime ?? h.checkInTime ?? '--:--';
-                final checkOut = h.checkOutTime ?? '--:--';
-                final isIzin = h.alasanIzin != null && h.alasanIzin!.isNotEmpty;
+                  final checkIn = h.checkInTime ?? h.checkInTime ?? '--:--';
+                  final checkOut = h.checkOutTime ?? '--:--';
+                  final isIzin =
+                      h.alasanIzin != null && h.alasanIzin!.isNotEmpty;
 
-                bool isLate = false;
-                if (!isIzin && checkIn != '--:--') {
-                  try {
-                    final parts = checkIn.split(':');
-                    if (parts.length >= 2) {
-                      final hour = int.parse(parts[0]);
-                      final minute = int.parse(parts[1]);
-                      isLate = hour > 8 || (hour == 8 && minute > 0);
+                  bool isLate = false;
+                  if (!isIzin && checkIn != '--:--') {
+                    try {
+                      final parts = checkIn.split(':');
+                      if (parts.length >= 2) {
+                        final hour = int.parse(parts[0]);
+                        final minute = int.parse(parts[1]);
+                        isLate = hour > 8 || (hour == 8 && minute > 0);
+                      }
+                    } catch (_) {
+                      isLate = false;
                     }
-                  } catch (_) {
-                    isLate = false;
                   }
-                }
 
-                // Prepare data map for the helper method
-                final itemData = {
-                  'day': dayLabel,
-                  'date': formattedDate,
-                  'range': isIzin
-                      ? 'Izin: ${h.alasanIzin}'
-                      : '$checkIn → $checkOut',
-                  'status': isIzin
-                      ? 'Sakit/Izin'
-                      : (isLate ? 'Terlambat' : 'Hadir'),
-                  'isHighlight':
-                      isLate || isIzin, // Replaces 'late' to avoid null issues
-                };
+                  // Prepare data map for the helper method
+                  final itemData = {
+                    'day': dayLabel,
+                    'date': formattedDate,
+                    'range': isIzin
+                        ? 'Izin: ${h.alasanIzin}'
+                        : '$checkIn → $checkOut',
+                    'status': isIzin
+                        ? 'Sakit/Izin'
+                        : (isLate ? 'Terlambat' : 'Hadir'),
+                    'isHighlight':
+                        isLate ||
+                        isIzin, // Replaces 'late' to avoid null issues
+                  };
 
-                return _historyItem(itemData);
-              },
-            ),
-          ],
+                  return _historyItem(itemData);
+                },
+              ),
+            ],
+          ),
         );
       },
       loading: () => const Center(

@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:absensi_go/src/core/constants/app_colors.dart';
 import 'package:absensi_go/src/features/attendance/provider/attendance_provider.dart';
+import 'package:absensi_go/src/features/attendance/provider/history_provider.dart';
 import 'package:absensi_go/src/features/check_in/presentation/widgets/index.dart';
 import 'package:absensi_go/src/features/check_in/provider/get_today_check_in_provider.dart';
 import 'package:absensi_go/src/features/check_in/provider/submit_check_in_provider.dart';
@@ -25,15 +26,15 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   bool _isRequestIzin = false;
   DateTime? _izinDate;
 
+  // Press state for submit button animation
+  bool _isButtonPressed = false;
+
   @override
   void initState() {
     super.initState();
     _alasanIzinController = TextEditingController();
-    // ADD THIS:
     _alasanIzinController.addListener(() {
-      setState(
-        () {},
-      ); // This refreshes the UI to check if the button should be enabled
+      setState(() {});
     });
     _izinDate = DateTime.now();
   }
@@ -60,13 +61,12 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
           _mapController!.animateCamera(
             CameraUpdate.newLatLngZoom(
               LatLng(state.latitude!, state.longitude!),
-              17, // Zoom level
+              17,
             ),
           );
         }
       });
     });
-    // -------------------------
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7),
@@ -116,11 +116,9 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                   errorMessage: state.errorMessage,
                   onRefresh: () =>
                       ref.read(submitCheckInProvider.notifier).getLocation(),
-
                   onMapCreated: (controller) {
                     ref.read(submitCheckInProvider.notifier).getLocation();
                     _mapController = controller;
-                    // Target immediately if location already exists when map is built
                     if (state.hasLocation) {
                       controller.moveCamera(
                         CameraUpdate.newLatLngZoom(
@@ -154,10 +152,10 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
     WidgetRef ref,
     CheckInState state,
   ) {
-    // Watch izin state untuk loading & error yang benar
     final izinState = ref.watch(izinProvider);
-
     final bool isSubmittingIzin = izinState.isSubmitting;
+    final bool isLoading = isSubmittingIzin || state.isSubmitting;
+
     final bool canSubmit = _isRequestIzin
         ? (_izinDate != null &&
               _alasanIzinController.text.trim().isNotEmpty &&
@@ -167,7 +165,6 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
               !state.isLoadingLocation &&
               !state.hasCheckedIn);
 
-    // Listen untuk error/success dari izinProvider
     ref.listen(izinProvider, (previous, next) {
       if (previous?.errorMessage == null && next.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -182,6 +179,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
         ref.invalidate(getTodayCheckInProvider);
         ref.invalidate(checkOutProvider);
         ref.invalidate(izinProvider);
+        ref.invalidate(attendanceHistoryProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.successMessage!),
@@ -192,79 +190,105 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
       }
     });
 
-    return SizedBox(
-      width: double.infinity,
-      child: TextButton(
-        onPressed: canSubmit
-            ? () async {
-                if (_isRequestIzin) {
-                  log('_izinDate: $_izinDate');
-                  log('alasan: ${_alasanIzinController.text.trim()}');
-                  final izinModel = IzinModel(
-                    attendanceDate: _izinDate,
-                    alasanIzin: _alasanIzinController.text.trim(),
-                  );
-                  await ref.read(izinProvider.notifier).submitIzin(izinModel);
-                } else {
-                  final success = await ref
-                      .read(submitCheckInProvider.notifier)
-                      .submitCheckIn();
+    final String buttonLabel = _isRequestIzin
+        ? 'Ajukan Izin'
+        : (state.hasCheckedIn ? 'Sudah Check In' : 'Check In Sekarang');
 
-                  if (context.mounted) {
-                    final updatedState = ref.read(submitCheckInProvider).value;
-                    if (success) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Check in berhasil!'),
-                          backgroundColor: Color(0xFF3B6D11),
+    return GestureDetector(
+      onTapDown: canSubmit
+          ? (_) => setState(() => _isButtonPressed = true)
+          : null,
+      onTapUp: canSubmit
+          ? (_) => setState(() => _isButtonPressed = false)
+          : null,
+      onTapCancel: canSubmit
+          ? () => setState(() => _isButtonPressed = false)
+          : null,
+      onTap: canSubmit
+          ? () async {
+              if (_isRequestIzin) {
+                log('_izinDate: $_izinDate');
+                log('alasan: ${_alasanIzinController.text.trim()}');
+                final izinModel = IzinModel(
+                  attendanceDate: _izinDate,
+                  alasanIzin: _alasanIzinController.text.trim(),
+                );
+                await ref.read(izinProvider.notifier).submitIzin(izinModel);
+              } else {
+                final success = await ref
+                    .read(submitCheckInProvider.notifier)
+                    .submitCheckIn();
+
+                if (context.mounted) {
+                  final updatedState = ref.read(submitCheckInProvider).value;
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Check in berhasil!'),
+                        backgroundColor: Color(0xFF3B6D11),
+                      ),
+                    );
+                    Navigator.pop(context);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          updatedState?.errorMessage ??
+                              'Gagal check in. Silakan coba lagi.',
                         ),
-                      );
-                      Navigator.pop(context);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            updatedState?.errorMessage ??
-                                'Gagal check in. Silakan coba lagi.',
-                          ),
-                          backgroundColor: const Color(0xFF993C1D),
-                        ),
-                      );
-                    }
+                        backgroundColor: const Color(0xFF993C1D),
+                      ),
+                    );
                   }
                 }
               }
-            : null, // null = tombol otomatis disabled
-        style: TextButton.styleFrom(
-          backgroundColor: canSubmit
-              ? const Color(0xFF1A1A2E)
-              : Colors.grey.shade400,
-          foregroundColor: Colors.white,
+            }
+          : null,
+      child: AnimatedScale(
+        scale: _isButtonPressed && canSubmit ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeInOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
+          decoration: BoxDecoration(
+            color: canSubmit
+                ? (_isButtonPressed
+                      ? const Color(0xFF2e2e4a) // slightly lighter on press
+                      : const Color(0xFF1A1A2E))
+                : Colors.grey.shade400,
             borderRadius: BorderRadius.circular(14),
+            boxShadow: canSubmit && !_isButtonPressed
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF1A1A2E).withOpacity(0.22),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    buttonLabel,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 15,
+                    ),
+                  ),
           ),
         ),
-        child: (isSubmittingIzin || state.isSubmitting)
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : Text(
-                _isRequestIzin
-                    ? 'Ajukan Izin'
-                    : (state.hasCheckedIn
-                          ? 'Sudah Check In'
-                          : 'Check In Sekarang'),
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 15,
-                ),
-              ),
       ),
     );
   }

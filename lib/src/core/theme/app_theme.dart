@@ -5,11 +5,11 @@ class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: AppColors.background,
-      colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
+      scaffoldBackgroundColor: AppColors.darkBg,
+      colorScheme: ColorScheme.fromSeed(seedColor: AppColors.darkBg),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.white,
-        foregroundColor: AppColors.text,
+        foregroundColor: AppColors.bodyText,
         elevation: 0,
       ),
       inputDecorationTheme: InputDecorationTheme(

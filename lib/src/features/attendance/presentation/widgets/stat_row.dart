@@ -1,4 +1,5 @@
 import 'package:absensi_go/src/features/attendance/provider/stat_provider.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,42 +18,45 @@ class StatRow extends ConsumerWidget {
           {'label': 'Total', 'value': (state?.totalAbsen ?? 0).toString()},
         ];
 
-        return Row(
-          children: stats.map((s) {
-            return Expanded(
-              child: Container(
-                margin: EdgeInsets.only(right: s != stats.last ? 8 : 0),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: Colors.black.withValues(alpha: 0.06),
+        return FadeInLeft(
+          duration: const Duration(milliseconds: 400),
+          child: Row(
+            children: stats.map((s) {
+              return Expanded(
+                child: Container(
+                  margin: EdgeInsets.only(right: s != stats.last ? 8 : 0),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Colors.black.withValues(alpha: 0.06),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        s['value']!,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF1A1A2E),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        s['label']!,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Column(
-                  children: [
-                    Text(
-                      s['value']!,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF1A1A2E),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      s['label']!,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),

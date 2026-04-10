@@ -39,7 +39,7 @@ class AttendanceHistoryNotifier extends AsyncNotifier<HistoryModel> {
 
     if (response.statusCode == 200) {
       // Use the model's factory directly.
-      // Your model already handles the 'data' list mapping.
+      // Your model alwatchy handles the 'data' list mapping.
       return HistoryModel.fromJson(json.decode(response.body));
     } else {
       throw Exception('Failed to load history: ${response.statusCode}');

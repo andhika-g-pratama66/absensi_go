@@ -2,6 +2,11 @@ import 'dart:developer';
 
 import 'package:absensi_go/src/data/models/auth_model.dart';
 import 'package:absensi_go/src/data/repositories/local_storage.dart';
+import 'package:absensi_go/src/features/attendance/provider/attendance_provider.dart';
+import 'package:absensi_go/src/features/attendance/provider/bottom_nav_index_provider.dart';
+import 'package:absensi_go/src/features/check_in/provider/get_today_check_in_provider.dart';
+import 'package:absensi_go/src/features/izin/provider/izin_provider.dart';
+import 'package:absensi_go/src/features/splash/provider/app_start_up_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:absensi_go/src/features/profile/repositories/profile_repository.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -35,7 +40,7 @@ final isLoggedInProvider = Provider<bool>((ref) {
   return authState.maybeWhen(
     data: (user) => user != null,
     // ✅ Keep this! It protects the router during the build() loading phase
-    loading: () => true,
+    loading: () => false,
     orElse: () => false,
   );
 });
@@ -47,7 +52,7 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
   return ref.watch(authTokenProvider) != null;
 });
 final tokenProvider = FutureProvider<String?>((ref) async {
-  return await ref.read(localStorageProvider).getToken();
+  return await ref.watch(localStorageProvider).getToken();
 });
 
 // --- LoginState (unchanged) ---
@@ -68,7 +73,7 @@ class LoginState {
 // ✅ Extends AsyncNotifier. Notice we drop AsyncValue from the generic type!
 class AuthNotifier extends AsyncNotifier<UserModel?> {
   // Helper getter to easily access the repository
-  AuthRepository get _repository => ref.read(authRepositoryProvider);
+  AuthRepository get _repository => ref.watch(authRepositoryProvider);
 
   @override
   Future<UserModel?> build() async {
@@ -83,13 +88,12 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
 
     try {
       // ✅ Fetch user dari API menggunakan token yang ada
-      final repo = ref.read(profileRepositoryProvider);
+      final repo = ref.watch(profileRepositoryProvider);
       final user = await repo.getUser();
       log('[AuthNotifier] User fetched from API: ${user?.name}');
 
       if (user == null) return null;
 
-      // ✅ Wrap User ke dalam UserModel agar type konsisten
       return UserModel(
         message: 'success',
         data: Data(token: token, user: user),
@@ -155,8 +159,21 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
   }
 
   Future<void> logout() async {
-    state = const AsyncLoading();
-    await _repository.logout();
-    state = const AsyncData(null);
+    // 1. Clear local storage
+    final storage = ref.watch(localStorageProvider);
+    await storage.clearAll(); // Delete token, navIndex, etc.
+
+    // 2. Reset this provider state
+    state = const AsyncValue.data(null);
+
+    // 3. Invalidate other specific providers
+    // This triggers them to go back to their 'loading' or 'empty' state
+    ref.invalidate(attendanceProvider);
+    ref.invalidate(getTodayCheckInProvider);
+    ref.invalidate(izinProvider);
+    ref.invalidate(bottomNavIndexProvider);
+
+    // 4. Invalidate the app startup provider so it re-runs for the next user
+    ref.invalidate(appStartProvider);
   }
 }
